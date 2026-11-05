@@ -1,9 +1,11 @@
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class Tests {
-    static final Type A = Type.var("a");
-    static final Type B = Type.var("b");
+    static final Type.Var A = Type.var("a");
+    static final Type.Var B = Type.var("b");
+
     static final Type BOOL = Type.BOOL;
 
     static final Term.Var X = new Term.Var("x", A);
@@ -15,6 +17,7 @@ public class Tests {
         typeTests();
         termTests();
         freeTests();
+        substTests();
         Check.report();
     }
 
@@ -71,7 +74,6 @@ public class Tests {
         Term.Var g = new Term.Var("g", Type.fun(A, Type.fun(A, A)));
         Term.Var x = new Term.Var("x", BOOL);
         Term.Const c = new Term.Const("c", A);
-
         Term t = new Term.Abs(X, new Term.Comb(new Term.Comb(g, X), Y));
 
         Check.checkEqual("a variable is free in itself", Set.of(X), Term.frees(X));
@@ -92,5 +94,25 @@ public class Tests {
 
         Check.checkHold("y is free in \\x. y", Term.freeIn(Y, new Term.Abs(X, Y)));
         Check.checkHold("x is not free in \\x. y", !Term.freeIn(X, new Term.Abs(X, Y)));
+    }
+
+    static void substTests() {
+        Type l = new Type.App("list", List.of(A));
+
+        Check.checkEqual("replace a variable", Type.fun(BOOL, B), Type.subst(Map.of(A, BOOL), Type.fun(A, B)));
+        Check.checkEqual("variables not in the map are unchanged", Type.fun(A, B),
+                Type.subst(Map.of(Type.var("c"), BOOL), Type.fun(A, B)));
+        Check.checkEqual("empty substitution is the identity", l, Type.subst(Map.of(), l));
+        Check.checkEqual("bool has no variables to replace",
+                BOOL, Type.subst(Map.of(A, B), BOOL));
+        Check.checkEqual("works inside any type operator",
+                new Type.App("list", List.of(BOOL)), Type.subst(Map.of(A, BOOL), l));
+        Check.checkEqual("a variable can become a compound type",
+                Type.fun(Type.fun(B, B), BOOL),
+                Type.subst(Map.of(A, Type.fun(B, B)), Type.fun(A, BOOL)));
+        Check.checkEqual("simultaneous a and b swap",
+                Type.fun(B, A), Type.subst(Map.of(A, B, B, A), Type.fun(A, B)));
+        Check.checkEqual("the replacement is not substituted again",
+                Type.fun(A, A), Type.subst(Map.of(A, Type.fun(A, A)), A));
     }
 }
