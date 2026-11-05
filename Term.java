@@ -18,7 +18,7 @@ public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
             Type funType = typeOf(fun);
             if (!Type.isFun(funType) || !Type.domain(funType).equals(typeOf(arg)))
                 throw new HolException(
-                        "Comb: cannot apply" + fun + " : " + funType + " to " + arg + " : " + typeOf(arg));
+                        "Comb: cannot apply " + fun + " : " + funType + " to " + arg + " : " + typeOf(arg));
         }
 
         @Override
