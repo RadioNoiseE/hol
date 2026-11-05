@@ -67,7 +67,7 @@ public sealed interface Type permits Type.Var, Type.App {
                 if (!args.isEmpty()) {
                     sb.append('(');
                     for (int i = 0; i < args.size(); i++) {
-                        if (1 > 0)
+                        if (i > 0)
                             sb.append(", ");
                         show(args.get(i), false, sb);
                     }
