@@ -1,5 +1,11 @@
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.LinkedHashSet;
 import java.util.Set;
+
+record Binding(Term.Var left, Term.Var right) {
+    // package-private binding as entry for stacks
+}
 
 public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
     record Var(String name, Type type) implements Term {
@@ -42,7 +48,7 @@ public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
             case Var v -> v.type();
             case Const c -> c.type();
             case Comb(Term f, Term _) -> Type.range(typeOf(f));
-            case Abs(Var v, Term body) -> Type.fun(v.type(), typeOf(body));
+            case Abs(Var v, Term b) -> Type.fun(v.type(), typeOf(b));
         };
     }
 
@@ -57,8 +63,8 @@ public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
                 result.addAll(frees(f));
                 result.addAll(frees(x));
             }
-            case Abs(Var v, Term body) -> {
-                result.addAll(frees(body));
+            case Abs(Var v, Term b) -> {
+                result.addAll(frees(b));
                 result.remove(v);
             }
         }
@@ -67,6 +73,34 @@ public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
 
     static boolean freeIn(Var v, Term t) {
         return frees(t).contains(v);
+    }
+
+    static boolean aconv(Term s, Term t) {
+        return aconv(s, t, new ArrayDeque<>());
+    }
+
+    private static boolean aconv(Term s, Term t, Deque<Binding> env) {
+        if (s instanceof Var v && t instanceof Var w) {
+            for (Binding b : env)
+                if (b.left().equals(v) || b.right().equals(w))
+                    return b.left().equals(v) && b.right().equals(w);
+            return v.equals(w);
+        }
+        if (s instanceof Const c && t instanceof Const d)
+            return c.equals(d);
+        if (s instanceof Comb(Term f, Term x) && t instanceof Comb(Term g, Term y))
+            return aconv(f, g, env) && aconv(x, y, env);
+        if (s instanceof Abs(Var v, Term b) && t instanceof Abs(Var w, Term c)) {
+            if (!typeOf(v).equals(typeOf(w)))
+                return false;
+            env.push(new Binding(v, w));
+            try {
+                return aconv(b, c, env);
+            } finally {
+                env.pop();
+            }
+        }
+        return false;
     }
 
     static String show(Term t) {
@@ -94,11 +128,11 @@ public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
                 if (prec > 1)
                     sb.append(')');
             }
-            case Abs(Var v, Term body) -> {
+            case Abs(Var v, Term b) -> {
                 if (prec > 0)
                     sb.append('(');
                 sb.append('\\').append(v.name()).append(':').append(v.type()).append(". ");
-                show(body, 0, sb);
+                show(b, 0, sb);
                 if (prec > 0)
                     sb.append(')');
             }
