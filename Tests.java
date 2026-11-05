@@ -1,4 +1,5 @@
 import java.util.List;
+import java.util.Set;
 
 public class Tests {
     static final Type A = Type.var("a");
@@ -13,6 +14,7 @@ public class Tests {
     public static void main(String[] args) {
         typeTests();
         termTests();
+        freeTests();
         Check.report();
     }
 
@@ -65,4 +67,30 @@ public class Tests {
                 !idx.equals(new Term.Abs(Y, Y)));
     }
 
+    static void freeTests() {
+        Term.Var g = new Term.Var("g", Type.fun(A, Type.fun(A, A)));
+        Term.Var x = new Term.Var("x", BOOL);
+        Term.Const c = new Term.Const("c", A);
+
+        Term t = new Term.Abs(X, new Term.Comb(new Term.Comb(g, X), Y));
+
+        Check.checkEqual("a variable is free in itself", Set.of(X), Term.frees(X));
+        Check.checkEqual("a constant has no free variables", Set.of(), Term.frees(c));
+        Check.checkEqual("application: union of both sides",
+                Set.of(F, X), Term.frees(new Term.Comb(F, X)));
+        Check.checkEqual("abstraction binds its variable",
+                Set.of(), Term.frees(new Term.Abs(X, X)));
+        Check.checkEqual("abstraction only binds its own variable",
+                Set.of(Y), Term.frees(new Term.Abs(X, Y)));
+        Check.checkEqual("inner binder shadows outer: \\x. \\x. x is closed",
+                Set.of(), Term.frees(new Term.Abs(X, new Term.Abs(X, X))));
+        Check.checkEqual("bound variable with a different type does not bind",
+                Set.of(X), Term.frees(new Term.Abs(x, X)));
+
+        Check.checkEqual("free variables in order of first occurrence",
+                List.of(g, Y), List.copyOf(Term.frees(t)));
+
+        Check.checkHold("y is free in \\x. y", Term.freeIn(Y, new Term.Abs(X, Y)));
+        Check.checkHold("x is not free in \\x. y", !Term.freeIn(X, new Term.Abs(X, Y)));
+    }
 }
