@@ -18,6 +18,7 @@ public class Tests {
         termTests();
         freeTests();
         substTests();
+        aconvTests();
         Check.report();
     }
 
@@ -114,5 +115,50 @@ public class Tests {
                 Type.fun(B, A), Type.subst(Map.of(A, B, B, A), Type.fun(A, B)));
         Check.checkEqual("the replacement is not substituted again",
                 Type.fun(A, A), Type.subst(Map.of(A, Type.fun(A, A)), A));
+    }
+
+    static void aconvTests() {
+        Term.Var z = new Term.Var("z", A);
+        Term.Var x = new Term.Var("x", BOOL);
+        Term.Const c = new Term.Const("c", A);
+
+        Check.checkHold("a variable is alpha-equivalent to itself", Term.aconv(X, X));
+        Check.checkHold("different free variables are not", !Term.aconv(X, Y));
+        Check.checkHold("same name, different type: not equivalent", !Term.aconv(X, x));
+        Check.checkHold("equal constants", Term.aconv(c, new Term.Const("c", A)));
+        Check.checkHold("a variable is not a constant", !Term.aconv(X, new Term.Const("x", A)));
+        Check.checkHold("applications compare both sides",
+                Term.aconv(new Term.Comb(F, X), new Term.Comb(F, X)));
+        Check.checkHold("applications with different arguments",
+                !Term.aconv(new Term.Comb(F, X), new Term.Comb(F, Y)));
+
+        Check.checkHold("\\x. x is \\y. y",
+                Term.aconv(new Term.Abs(X, X), new Term.Abs(Y, Y)));
+        Check.checkHold("\\x. f x is \\y. f y",
+                Term.aconv(new Term.Abs(X, new Term.Comb(F, X)), new Term.Abs(Y, new Term.Comb(F, Y))));
+        Check.checkHold("\\x. \\y. x is \\y. \\x. y",
+                Term.aconv(new Term.Abs(X, new Term.Abs(Y, X)), new Term.Abs(Y, new Term.Abs(X, Y))));
+        Check.checkHold("\\x. \\y. x is not \\x. \\y. y",
+                !Term.aconv(new Term.Abs(X, new Term.Abs(Y, X)), new Term.Abs(X, new Term.Abs(Y, Y))));
+
+        Check.checkHold("\\x. y is \\z. y",
+                Term.aconv(new Term.Abs(X, Y), new Term.Abs(z, Y)));
+        Check.checkHold("\\x. y is not \\y. y",
+                !Term.aconv(new Term.Abs(X, Y), new Term.Abs(Y, Y)));
+        Check.checkHold("\\y. y is not \\x. y",
+                !Term.aconv(new Term.Abs(Y, Y), new Term.Abs(X, Y)));
+
+        Check.checkHold("\\x. \\x. x is \\y. \\z. z",
+                Term.aconv(new Term.Abs(X, new Term.Abs(X, X)), new Term.Abs(Y, new Term.Abs(z, z))));
+        Check.checkHold("\\x. \\x. x is not \\y. \\z. y",
+                !Term.aconv(new Term.Abs(X, new Term.Abs(X, X)), new Term.Abs(Y, new Term.Abs(z, Y))));
+        Check.checkHold("\\x. \\y. x is not \\y. \\y. y",
+                !Term.aconv(new Term.Abs(X, new Term.Abs(Y, X)), new Term.Abs(Y, new Term.Abs(Y, Y))));
+
+        Check.checkHold("\\x:bool. x is not \\x:'a. x",
+                !Term.aconv(new Term.Abs(x, x), new Term.Abs(X, X)));
+
+        Check.checkHold("an abstraction is not an application",
+                !Term.aconv(new Term.Abs(X, X), new Term.Comb(F, X)));
     }
 }
