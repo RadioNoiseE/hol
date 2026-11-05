@@ -1,4 +1,5 @@
 import java.util.List;
+import java.util.Map;
 
 public sealed interface Type permits Type.Var, Type.App {
     record Var(String name) implements Type {
@@ -43,6 +44,13 @@ public sealed interface Type permits Type.Var, Type.App {
         if (t instanceof App(String op, List<Type> args) && op.equals("fun") && args.size() == 2)
             return args.get(1);
         throw new HolException("domain: not a function type: " + t);
+    }
+
+    static Type subst(Map<Var, Type> theta, Type t) {
+        return switch (t) {
+            case Var v -> theta.getOrDefault(v, v);
+            case App(String op, List<Type> args) -> new App(op, args.stream().map(a -> subst(theta, a)).toList());
+        };
     }
 
     static String show(Type t) {
