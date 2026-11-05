@@ -1,3 +1,6 @@
+import java.util.LinkedHashSet;
+import java.util.Set;
+
 public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
     record Var(String name, Type type) implements Term {
         @Override
@@ -41,6 +44,29 @@ public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
             case Comb(Term f, Term _) -> Type.range(typeOf(f));
             case Abs(Var v, Term body) -> Type.fun(v.type(), typeOf(body));
         };
+    }
+
+    static Set<Var> frees(Term t) {
+        Set<Var> result = new LinkedHashSet<>();
+        switch (t) {
+            case Var v -> result.add(v);
+            case Const _ -> {
+                // a const has no free variables
+            }
+            case Comb(Term f, Term x) -> {
+                result.addAll(frees(f));
+                result.addAll(frees(x));
+            }
+            case Abs(Var v, Term body) -> {
+                result.addAll(frees(body));
+                result.remove(v);
+            }
+        }
+        return result;
+    }
+
+    static boolean freeIn(Var v, Term t) {
+        return frees(t).contains(v);
     }
 
     static String show(Term t) {
