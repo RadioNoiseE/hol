@@ -1,6 +1,8 @@
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 
 record Binding(Term.Var left, Term.Var right) {
@@ -101,6 +103,58 @@ public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
             }
         }
         return false;
+    }
+
+    static Var variant(Set<Var> avoid, Var v) {
+        String name = v.name();
+        while (nameUsed(avoid, name))
+            name += '\'';
+        return new Var(name, v.type());
+    }
+
+    private static boolean nameUsed(Set<Var> avoid, String name) {
+        for (Var v : avoid)
+            if (v.name().equals(name))
+                return true;
+        return false;
+    }
+
+    static Term vsubst(Map<Var, Term> theta, Term t) {
+        for (Map.Entry<Var, Term> e : theta.entrySet())
+            if (!e.getKey().type().equals(typeOf(e.getValue())))
+                throw new HolException(
+                        "vsubst: cannot replace " + e.getKey() + " : " + e.getKey().type() + " by " + e.getValue()
+                                + " : " + typeOf(e.getValue()));
+        return vsubstChecked(theta, t);
+    }
+
+    private static Term vsubstChecked(Map<Var, Term> theta, Term t) {
+        return switch (t) {
+            case Var v -> theta.getOrDefault(v, v);
+            case Const c -> c;
+            case Comb(Term f, Term x) -> new Comb(vsubstChecked(theta, f), vsubstChecked(theta, x));
+            case Abs(Var v, Term b) -> {
+                Map<Var, Term> inner = new HashMap<>();
+                Set<Var> avoid = frees(b);
+                for (Map.Entry<Var, Term> e : theta.entrySet())
+                    if (!e.getKey().equals(v) && avoid.contains(e.getKey()))
+                        inner.put(e.getKey(), e.getValue());
+                if (inner.isEmpty())
+                    yield t;
+                boolean capture = false;
+                for (Map.Entry<Var, Term> e : inner.entrySet()) {
+                    Set<Var> f = frees(e.getValue());
+                    avoid.addAll(f);
+                    if (f.contains(v))
+                        capture = true;
+                }
+                if (!capture)
+                    yield new Abs(v, vsubstChecked(inner, b));
+                Var w = variant(avoid, v);
+                inner.put(v, w);
+                yield new Abs(w, vsubstChecked(inner, b));
+            }
+        };
     }
 
     static String show(Term t) {
