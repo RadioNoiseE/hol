@@ -19,6 +19,8 @@ public class Tests {
         freeTests();
         substTests();
         aconvTests();
+        variantTests();
+        vsubstTests();
         Check.report();
     }
 
@@ -160,5 +162,66 @@ public class Tests {
 
         Check.checkHold("an abstraction is not an application",
                 !Term.aconv(new Term.Abs(X, X), new Term.Comb(F, X)));
+    }
+
+    static void variantTests() {
+        Term.Var x1 = new Term.Var("x'", A);
+
+        Check.checkEqual("no clash: name unchanged", X, Term.variant(Set.of(Y), X));
+        Check.checkEqual("clash: add a prime", x1, Term.variant(Set.of(X), X));
+        Check.checkEqual("keep adding primes until free",
+                new Term.Var("x''", A), Term.variant(Set.of(X, x1), X));
+        Check.checkEqual("names clash even when types differ",
+                x1, Term.variant(Set.of(new Term.Var("x", BOOL)), X));
+    }
+
+    static void vsubstTests() {
+        Term.Var z = new Term.Var("z", A);
+        Term.Var x1 = new Term.Var("x'", A);
+        Term.Var g = new Term.Var("g", Type.fun(A, Type.fun(A, A)));
+        Term.Const c = new Term.Const("c", A);
+        Term.Const eq = new Term.Const("=", Type.fun(A, Type.fun(A, BOOL)));
+
+        Check.checkEqual("replace a variable",
+                new Term.Comb(F, Y), Term.vsubst(Map.of(X, Y), new Term.Comb(F, X)));
+        Check.checkEqual("variables not in the map are unchanged",
+                new Term.Comb(F, X), Term.vsubst(Map.of(Y, z), new Term.Comb(F, X)));
+        Check.checkEqual("constants are unchanged", c, Term.vsubst(Map.of(X, Y), c));
+        Check.checkEqual("replace by a compound term",
+                new Term.Comb(F, new Term.Comb(F, Y)),
+                Term.vsubst(Map.of(X, new Term.Comb(F, Y)), new Term.Comb(F, X)));
+        Check.checkEqual("simultaneous: x = y becomes y = x",
+                new Term.Comb(new Term.Comb(eq, Y), X),
+                Term.vsubst(Map.of(X, Y, Y, X), new Term.Comb(new Term.Comb(eq, X), Y)));
+
+        Term idX = new Term.Abs(X, X);
+        Check.checkEqual("a bound variable is not replaced", idX, Term.vsubst(Map.of(X, Y), idX));
+        Check.checkEqual("a free variable under a binder is replaced",
+                new Term.Abs(X, z), Term.vsubst(Map.of(Y, z), new Term.Abs(X, Y)));
+        Check.checkEqual("no renaming when nothing would be captured",
+                new Term.Abs(X, new Term.Comb(new Term.Comb(g, X), z)),
+                Term.vsubst(Map.of(Y, z), new Term.Abs(X, new Term.Comb(new Term.Comb(g, X), Y))));
+        Check.checkEqual("no renaming for entries whose variable is not free in the body",
+                idX, Term.vsubst(Map.of(Y, X), idX));
+
+        Term captured = Term.vsubst(Map.of(Y, X), new Term.Abs(X, Y));
+        Check.checkHold("(\\x. y)[y := x] is \\z. x up to renaming",
+                Term.aconv(captured, new Term.Abs(z, X)));
+        Check.checkEqual("(\\x. y)[y := x] keeps x free", Set.of(X), Term.frees(captured));
+
+        Term body = new Term.Comb(new Term.Comb(g, Y), x1);
+        Term result = Term.vsubst(Map.of(Y, X), new Term.Abs(X, body));
+        Check.checkHold("renamed binder avoids the body's other free variables",
+                Term.aconv(result, new Term.Abs(z, new Term.Comb(new Term.Comb(g, X), x1))));
+        Check.checkEqual("free variables after renaming", Set.of(g, X, x1), Term.frees(result));
+
+        Term nested = new Term.Abs(X, new Term.Abs(z, new Term.Comb(new Term.Comb(g, Y), z)));
+        Term nestedResult = Term.vsubst(Map.of(Y, X), nested);
+        Check.checkHold("capture avoided under nested binders",
+                Term.aconv(nestedResult,
+                        new Term.Abs(Y, new Term.Abs(z, new Term.Comb(new Term.Comb(g, X), z)))));
+
+        Check.checkThrow("replacement must have the variable's type",
+                () -> Term.vsubst(Map.of(X, P), X));
     }
 }
