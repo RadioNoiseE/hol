@@ -11,6 +11,7 @@ public class Tests {
         aconvTests();
         variantTests();
         vsubstTests();
+        instTests();
         Check.report();
     }
 
@@ -19,12 +20,15 @@ public class Tests {
     static final Type BOOL = Type.BOOL;
 
     static final Term.Var x = var("x", A);
-    static final Term.Var y = var("y", A);
-    static final Term.Var z = var("z", A);
     static final Term.Var x1 = var("x'", A);
-    static final Term.Var xb = var("x", BOOL);
+    static final Term.Var xb = var("x", B);
+    static final Term.Var xB = var("x", BOOL);
+    static final Term.Var y = var("y", A);
+    static final Term.Var yB = var("y", BOOL);
+    static final Term.Var z = var("z", A);
     static final Term.Var p = var("p", BOOL);
     static final Term.Var f = var("f", fun(A, A));
+    static final Term.Var fb = var("f", fun(BOOL, BOOL));
     static final Term.Var g = var("g", fun(A, A, A));
     static final Term.Var h = var("h", fun(fun(A, A), A));
     static final Term.Const c = new Term.Const("c", A);
@@ -99,6 +103,17 @@ public class Tests {
                 Term.aconv(expected, actual));
     }
 
+    static void instEq(Term expected, Map<Type.Var, Type> theta, Term t) {
+        Check.checkEqual("inst " + theta + " in " + t, expected, Term.inst(theta, t));
+    }
+
+    static void instAlpha(Term expected, Map<Type.Var, Type> theta, Term t) {
+        Term actual = Term.inst(theta, t);
+        Check.checkHold("inst " + theta + " in " + t + "  ~  " + expected
+                + "   (got " + actual + ")",
+                Term.aconv(expected, actual));
+    }
+
     static void typeTests() {
         prints("'a", A);
         prints("bool", BOOL);
@@ -134,7 +149,7 @@ public class Tests {
         prints("(=)", new Term.Const("=", fun(A, A, BOOL)));
 
         Check.checkHold("same name and type: same variable", x.equals(var("x", A)));
-        Check.checkHold("same name, different type: different variable", !x.equals(xb));
+        Check.checkHold("same name, different type: different variable", !x.equals(xB));
         Check.checkHold("equals is structural, not alpha-equivalence", !lam(x, x).equals(lam(y, y)));
     }
 
@@ -145,7 +160,7 @@ public class Tests {
         freesAre(lam(x, x));
         freesAre(lam(x, y), y);
         freesAre(lam(x, lam(x, x))); // inner binder shadows outer
-        freesAre(lam(xb, x), x); // binder of another type does not bind
+        freesAre(lam(xB, x), x); // binder of another type does not bind
         freesAre(lam(x, app(g, x, y)), g, y); // order of first occurrence
         freesAre(lam(y, app(g, x, app(h, lam(x, x)))), g, x, h); // x both free and bound
 
@@ -168,7 +183,7 @@ public class Tests {
         // no binders: same as equals
         alpha(x, x);
         notAlpha(x, y);
-        notAlpha(x, xb);
+        notAlpha(x, xB);
         alpha(c, new Term.Const("c", A));
         notAlpha(x, new Term.Const("x", A));
         alpha(app(f, x), app(f, x));
@@ -190,7 +205,7 @@ public class Tests {
         notAlpha(lam(x, lam(x, x)), lam(y, lam(z, y)));
         notAlpha(lam(x, lam(y, x)), lam(y, lam(y, y)));
 
-        notAlpha(lam(xb, xb), lam(x, x)); // binder types matter
+        notAlpha(lam(xB, xB), lam(x, x)); // binder types matter
         notAlpha(lam(x, x), app(f, x)); // different shapes
     }
 
@@ -198,7 +213,7 @@ public class Tests {
         Check.checkEqual("no clash: name unchanged", x, Term.variant(Set.of(y), x));
         Check.checkEqual("clash: add a prime", x1, Term.variant(Set.of(x), x));
         Check.checkEqual("keep adding primes", var("x''", A), Term.variant(Set.of(x, x1), x));
-        Check.checkEqual("names clash even when types differ", x1, Term.variant(Set.of(xb), x));
+        Check.checkEqual("names clash even when types differ", x1, Term.variant(Set.of(xB), x));
     }
 
     static void vsubstTests() {
@@ -226,5 +241,30 @@ public class Tests {
 
         Check.checkThrow("vsubst: replacement must have the variable's type",
                 () -> Term.vsubst(Map.of(x, p), x));
+    }
+
+    static void instTests() {
+        // types change everywhere: variables, constants, binders
+        instEq(xB, Map.of(A, BOOL), x);
+        instEq(lam(xB, xB), Map.of(A, BOOL), lam(x, x));
+        instEq(eq(xB, yB), Map.of(A, BOOL), eq(x, y)); // the constant = too
+        instEq(app(fb, xB), Map.of(A, BOOL), app(f, x));
+        instEq(app(f, x), Map.of(B, BOOL), app(f, x)); // other type variables: unchanged
+        instEq(lam(x, app(f, x)), Map.of(), lam(x, app(f, x))); // empty: identity
+        instEq(lam(xb, x), Map.of(A, B, B, A), lam(x, xb)); // simultaneous swap, no renaming
+
+        // two free variables may become one: that is fine
+        Term.Var r = var("r", fun(A, B, BOOL));
+        instEq(app(var("r", fun(A, A, BOOL)), x, x), Map.of(B, A), app(r, x, xb));
+
+        // a bound variable must not capture a free one that becomes equal to it
+        instAlpha(lam(z, x), Map.of(B, A), lam(x, xb));
+        freesAre(Term.inst(Map.of(B, A), lam(x, xb)), x);
+
+        // ... and the renamed binder must still get its new type
+        instAlpha(lam(var("z", BOOL), xB), Map.of(A, BOOL, B, BOOL), lam(x, xb));
+
+        // no renaming when the clashing variable is bound further in
+        instEq(lam(x, lam(x, x)), Map.of(B, A), lam(x, lam(xb, xb)));
     }
 }
