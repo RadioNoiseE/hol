@@ -157,6 +157,26 @@ public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
         };
     }
 
+    static Term inst(Map<Type.Var, Type> theta, Term t) {
+        return switch (t) {
+            case Var v -> new Var(v.name(), Type.subst(theta, v.type()));
+            case Const c -> new Const(c.name(), Type.subst(theta, c.type()));
+            case Comb(Term f, Term x) -> new Comb(inst(theta, f), inst(theta, x));
+            case Abs(Var v, Term b) -> {
+                Set<Var> avoid = frees(b);
+                Var w = new Var(v.name(), Type.subst(theta, v.type()));
+                boolean clash = false;
+                for (Var f : avoid)
+                    if (!f.equals(v) && inst(theta, f).equals(w))
+                        clash = true;
+                if (!clash)
+                    yield new Abs(w, inst(theta, b));
+                w = variant(avoid, v);
+                yield inst(theta, new Abs(w, vsubst(Map.of(v, w), b)));
+            }
+        };
+    }
+
     static String show(Term t) {
         StringBuilder sb = new StringBuilder();
         show(t, 0, sb);
