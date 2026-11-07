@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.Set;
 
 record Pair(Term.Var l, Term.Var r) {
-    // package-private pair as entry for stacks
+    // package-private entry of deque for aconv
 }
 
 public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
