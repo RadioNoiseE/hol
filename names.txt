@@ -90,4 +90,4 @@ inst(theta, t)   -> inst for instantiation, theta as reserved (2a),
                     t for term (2c); vs (6), w (4c), f (4d), clash (5)
 show(t)          -> show for show, t for term (2c); sb (4e)
 show(t, p, sb)   -> show for show, t for term (2c), p for precedence (2b),
-                    sb for string builder (2c)
+                    sb for string builder (2c); c, e (4e)

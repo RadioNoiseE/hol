@@ -211,7 +211,7 @@ public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
         return sb.toString();
     }
 
-    // precedence: 0 = anywhere, 1 = function position, 2 = argument position
+    // p: 0 anywhere, 1 function position or side of equal sign, 2 argument position
     private static void show(Term t, int p, StringBuilder sb) {
         switch (t) {
             case Var v -> sb.append(v.n());
@@ -220,6 +220,16 @@ public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
                     sb.append(c.n());
                 else
                     sb.append('(').append(c.n()).append(')');
+            }
+            case Comb c when isEq(c) -> {
+                Eq e = destEq(c);
+                if (p > 0)
+                    sb.append('(');
+                show(e.l(), 1, sb);
+                sb.append(" = ");
+                show(e.r(), 1, sb);
+                if (p > 0)
+                    sb.append(')');
             }
             case Comb(Term f, Term x) -> {
                 if (p > 1)
