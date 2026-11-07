@@ -1,6 +1,7 @@
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -106,17 +107,13 @@ public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
     }
 
     static Var variant(Set<Var> avoid, Var v) {
-        String name = v.name();
-        while (nameUsed(avoid, name))
-            name += '\'';
-        return new Var(name, v.type());
-    }
-
-    private static boolean nameUsed(Set<Var> avoid, String name) {
-        for (Var v : avoid)
-            if (v.name().equals(name))
-                return true;
-        return false;
+        Set<String> s = new HashSet<>();
+        for (Var w : avoid)
+            s.add(w.name());
+        String n = v.name();
+        while (s.contains(n))
+            n += '\'';
+        return new Var(n, v.type());
     }
 
     static Term vsubst(Map<Var, Term> theta, Term t) {
