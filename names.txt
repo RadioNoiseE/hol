@@ -91,3 +91,13 @@ inst(theta, t)   -> inst for instantiation, theta as reserved (2a),
 show(t)          -> show for show, t for term (2c); sb (4e)
 show(t, p, sb)   -> show for show, t for term (2c), p for precedence (2b),
                     sb for string builder (2c); c, e (4e)
+
+
+Thm.java:
+
+Thm(h, c)  -> Thm for theorem, h for hypothesis, c for conclusion (2b)
+hyps()     -> hyps for hypothesis
+concl()    -> concl for conclusion
+toString() -> toString for to string, sb for string builder (2c); i (4a)
+refl(t)    -> refl for reflection, t for term (2c)
+assume(t)  -> assume for assume, t for term (2c)
