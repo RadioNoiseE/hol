@@ -12,6 +12,8 @@ public class Tests {
         variantTests();
         vsubstTests();
         instTests();
+        eqTests();
+        thmTests();
         Check.report();
     }
 
@@ -266,5 +268,36 @@ public class Tests {
 
         // no renaming when the clashing variable is bound further in
         instEq(lam(x, lam(x, x)), Map.of(B, A), lam(x, lam(xb, xb)));
+    }
+
+    static void eqTests() {
+        prints("x = y", eq(x, y));
+        prints("(\\x:'a. x) = (\\y:'a. y)", eq(lam(x, x), lam(y, y)));
+        prints("f x = y", eq(app(f, x), y));
+        prints("\\x:'a. x = x", lam(x, eq(x, x)));
+        prints("f (x = y)", app(fb, eq(x, y)));
+        prints("(x = y) = (y = x)", eq(eq(x, y), eq(y, x)));
+
+        Check.checkEqual("mkEq builds the same term as eq", eq(x, y), Term.mkEq(x, y));
+        Check.checkThrow("mkEq: both sides need the same type", () -> Term.mkEq(x, p));
+
+        Check.checkHold("x = y is an equation", Term.isEq(eq(x, y)));
+        Check.checkHold("f x is not an equation", !Term.isEq(app(f, x)));
+        Check.checkEqual("destEq: left side", x, Term.destEq(eq(x, y)).l());
+        Check.checkEqual("destEq: right side", y, Term.destEq(eq(x, y)).r());
+        Check.checkThrow("destEq fails on a non-equation", () -> Term.destEq(x));
+    }
+
+    static void thmTests() {
+        prints("|- x = x", Thm.refl(x));
+        prints("|- (\\x:'a. x) = (\\x:'a. x)", Thm.refl(lam(x, x)));
+        Check.checkEqual("refl has no hypotheses", List.of(), Thm.refl(x).hyps());
+        Check.checkEqual("refl: conclusion", eq(f, f), Thm.refl(f).concl());
+
+        prints("p |- p", Thm.assume(p));
+        prints("x = y |- x = y", Thm.assume(eq(x, y)));
+        Check.checkEqual("assume: hypotheses", List.of(p), Thm.assume(p).hyps());
+        Check.checkEqual("assume: conclusion", p, Thm.assume(p).concl());
+        Check.checkThrow("assume needs a proposition", () -> Thm.assume(x));
     }
 }
