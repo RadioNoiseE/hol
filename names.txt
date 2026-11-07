@@ -45,6 +45,11 @@ s, t, u      -> a term
 theta, sigma -> a substitution
 
 
+HolException.java:
+
+HolException(m) -> HolException for hol exception, m for message (2b)
+
+
 Type.java:
 
 Var(n)            -> Var for variable, n for name (2b)
