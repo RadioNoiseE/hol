@@ -1,0 +1,89 @@
+General Rules:
+
+1. Records, methods and constants: an idiomatic abbreviation or the
+   full word.  If HOL Light has the operation, use its name in camel
+   case.  These need no annotation.
+
+2. Parameters and record components, in order of preference:
+   a. a reserved name from the table below;
+   b. the first letter of what the variable means;
+   c. the capital letters of its type name, or the type's first
+      letter;
+   d. otherwise case by case, and add the result to the table.
+
+3. Fields: an idiomatic abbreviation or the full word.
+
+4. Local variables, in order of preference:
+  a. a reserved name from the table below;
+  b. a variable that matters across several lines: an abbreviation or
+     a short word for its role;
+  c. a value derived from a parameter or another local: the next
+     letter after that variable's letter, skipping reserved letters;
+  d. the first letter of what the variable means;
+  e. the capital letters of its type name, or the type's first letter;
+  f. otherwise case by case, and add the result to the table.
+
+5. Booleans, anywhere: a short word, so conditions read naturally.
+
+6. A collection of things named x is named xs.  This rule only
+   applies when x needs to coexist with xs.
+
+7. A reserved name may take another meaning within a structure
+   (record, method or case) that does not declare a variable with its
+   reserved meaning.  Qualified accessor calls do not count as uses of
+   the name.
+
+8. A pattern variable takes the record's name or, when it binds a
+   component, that component's name.  These need no annotation.
+
+
+Reserved Names:
+
+f, x         -> function and argument of an application, f(x)
+i, j         -> a loop index
+s, t, u      -> a term
+theta, sigma -> a substitution
+
+
+Type.java:
+
+Var(n)            -> Var for variable, n for name (2b)
+App(o, a)         -> App for application, o for operator, a for arguments (2b)
+var(n)            -> var for variable, n for name (2b)
+fun(d, r)         -> fun for function, d for domain, r for range (2b)
+isFun(t)          -> isFun for is function, t for type (2c, 7)
+domain(t)         -> domain for domain, t for type (2c, 7)
+range(t)          -> range for range, t for type (2c, 7)
+subst(theta, t)   -> subst for substitution, theta as reserved (2a),
+                     t for type (2c, 7); a (4d), as (6), l (4e)
+show(t)           -> show for show, t for type (2c, 7); sb (4e)
+show(t, left, sb) -> show for show, left for left of arrow (5), sb
+                     for string builder (2c); i (4a)
+
+
+Term.java:
+
+Pair(l, r)       -> Pair for pair, l for left, r for right (2b)
+Var(n, t)        -> Var for variable, n for name (2b), t for type (2b, 7)
+Const(n, t)      -> Const for const, n for name (2b), t for type (2b, 7)
+Comb(f, x)       -> Comb for combination, f and x as reserved (2a);
+                    t for type (4e, 7)
+Abs(v, b)        -> Abs for abstraction, v for variable, b for body (2b)
+typeOf(t)        -> typeOf for type of, t for term (2c)
+frees(t)         -> frees for free variables, t for term (2c)
+freeIn(v, t)     -> freeIn for free in, v for var, t for term (2c)
+aconv(s, t)      -> aconv for alpha-conversion, s and t as reserved (2a)
+aconv(s, t, env) -> aconv for alpha-conversion, s and t as reserved (2a),
+                    env for environment (2d, 4b); w (4c), p (4e), d, g, y, c (4c)
+variant(vs, v)   -> variant for variant, vs for vars (6), v for var (2c);
+                    ns (6), n (4d)
+vsubst(theta, t) -> vsubst for v-substitution, theta as reserved (2a),
+                    t for term (2c); e, v (4e), s (4a)
+vsub(theta, t)   -> vsub for v-substitution, theta as reserved (2a),
+                    t for term (2c), sigma (4a), vs (6), e (4e), capture (5),
+                    f (4d), w (4c)
+inst(theta, t)   -> inst for instantiation, theta as reserved (2a),
+                    t for term (2c); vs (6), w (4c), f (4d), clash (5)
+show(t)          -> show for show, t for term (2c); sb (4e)
+show(t, p, sb)   -> show for show, t for term (2c), p for precedence (2b),
+                    sb for string builder (2c)

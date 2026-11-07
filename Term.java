@@ -6,31 +6,31 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
-record Binding(Term.Var left, Term.Var right) {
-    // package-private binding as entry for stacks
+record Pair(Term.Var l, Term.Var r) {
+    // package-private pair as entry for stacks
 }
 
 public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
-    record Var(String name, Type type) implements Term {
+    record Var(String n, Type t) implements Term {
         @Override
         public String toString() {
             return Term.show(this);
         }
     }
 
-    record Const(String name, Type type) implements Term {
+    record Const(String n, Type t) implements Term {
         @Override
         public String toString() {
             return Term.show(this);
         }
     }
 
-    record Comb(Term fun, Term arg) implements Term {
+    record Comb(Term f, Term x) implements Term {
         public Comb {
-            Type funType = typeOf(fun);
-            if (!Type.isFun(funType) || !Type.domain(funType).equals(typeOf(arg)))
+            Type t = typeOf(f);
+            if (!Type.isFun(t) || !Type.domain(t).equals(typeOf(x)))
                 throw new HolException(
-                        "Comb: cannot apply " + fun + " : " + funType + " to " + arg + " : " + typeOf(arg));
+                        "Comb: cannot apply " + f + " : " + t + " to " + x + " : " + typeOf(x));
         }
 
         @Override
@@ -39,7 +39,7 @@ public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
         }
     }
 
-    record Abs(Var bvar, Term body) implements Term {
+    record Abs(Var v, Term b) implements Term {
         @Override
         public String toString() {
             return Term.show(this);
@@ -48,10 +48,10 @@ public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
 
     static Type typeOf(Term t) {
         return switch (t) {
-            case Var v -> v.type();
-            case Const c -> c.type();
+            case Var v -> v.t();
+            case Const c -> c.t();
             case Comb(Term f, Term _) -> Type.range(typeOf(f));
-            case Abs(Var v, Term b) -> Type.fun(v.type(), typeOf(b));
+            case Abs(Var v, Term b) -> Type.fun(v.t(), typeOf(b));
         };
     }
 
@@ -87,11 +87,11 @@ public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
         return aconv(s, t, new ArrayDeque<>());
     }
 
-    private static boolean aconv(Term s, Term t, Deque<Binding> env) {
+    private static boolean aconv(Term s, Term t, Deque<Pair> env) {
         if (s instanceof Var v && t instanceof Var w) {
-            for (Binding b : env)
-                if (b.left().equals(v) || b.right().equals(w))
-                    return b.left().equals(v) && b.right().equals(w);
+            for (Pair p : env)
+                if (p.l().equals(v) || p.r().equals(w))
+                    return p.l().equals(v) && p.r().equals(w);
             return v.equals(w);
         }
         if (s instanceof Const c && t instanceof Const d)
@@ -99,9 +99,9 @@ public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
         if (s instanceof Comb(Term f, Term x) && t instanceof Comb(Term g, Term y))
             return aconv(f, g, env) && aconv(x, y, env);
         if (s instanceof Abs(Var v, Term b) && t instanceof Abs(Var w, Term c)) {
-            if (!typeOf(v).equals(typeOf(w)))
+            if (!v.t().equals(w.t()))
                 return false;
-            env.push(new Binding(v, w));
+            env.push(new Pair(v, w));
             try {
                 return aconv(b, c, env);
             } finally {
@@ -111,69 +111,72 @@ public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
         return false;
     }
 
-    static Var variant(Set<Var> avoid, Var v) {
-        Set<String> s = new HashSet<>();
-        for (Var w : avoid)
-            s.add(w.name());
-        String n = v.name();
-        while (s.contains(n))
+    static Var variant(Set<Var> vs, Var v) {
+        Set<String> ns = new HashSet<>();
+        for (Var w : vs)
+            ns.add(w.n());
+        String n = v.n();
+        while (ns.contains(n))
             n += '\'';
-        return new Var(n, v.type());
+        return new Var(n, v.t());
     }
 
     static Term vsubst(Map<Var, Term> theta, Term t) {
-        for (Map.Entry<Var, Term> e : theta.entrySet())
-            if (!e.getKey().type().equals(typeOf(e.getValue())))
+        for (Map.Entry<Var, Term> e : theta.entrySet()) {
+            Var v = e.getKey();
+            Term s = e.getValue();
+            if (!v.t().equals(typeOf(s)))
                 throw new HolException(
-                        "vsubst: cannot replace " + e.getKey() + " : " + e.getKey().type() + " by " + e.getValue()
-                                + " : " + typeOf(e.getValue()));
-        return vsubstChecked(theta, t);
+                        "vsubst: cannot replace " + v + " : " + v.t() + " by " + s
+                                + " : " + typeOf(s));
+        }
+        return vsub(theta, t);
     }
 
-    private static Term vsubstChecked(Map<Var, Term> theta, Term t) {
+    private static Term vsub(Map<Var, Term> theta, Term t) {
         return switch (t) {
             case Var v -> theta.getOrDefault(v, v);
             case Const c -> c;
-            case Comb(Term f, Term x) -> new Comb(vsubstChecked(theta, f), vsubstChecked(theta, x));
+            case Comb(Term f, Term x) -> new Comb(vsub(theta, f), vsub(theta, x));
             case Abs(Var v, Term b) -> {
-                Map<Var, Term> inner = new HashMap<>();
-                Set<Var> avoid = frees(b);
+                Map<Var, Term> sigma = new HashMap<>();
+                Set<Var> vs = frees(b);
                 for (Map.Entry<Var, Term> e : theta.entrySet())
-                    if (!e.getKey().equals(v) && avoid.contains(e.getKey()))
-                        inner.put(e.getKey(), e.getValue());
-                if (inner.isEmpty())
+                    if (!e.getKey().equals(v) && vs.contains(e.getKey()))
+                        sigma.put(e.getKey(), e.getValue());
+                if (sigma.isEmpty())
                     yield t;
                 boolean capture = false;
-                for (Map.Entry<Var, Term> e : inner.entrySet()) {
+                for (Map.Entry<Var, Term> e : sigma.entrySet()) {
                     Set<Var> f = frees(e.getValue());
-                    avoid.addAll(f);
+                    vs.addAll(f);
                     if (f.contains(v))
                         capture = true;
                 }
                 if (!capture)
-                    yield new Abs(v, vsubstChecked(inner, b));
-                Var w = variant(avoid, v);
-                inner.put(v, w);
-                yield new Abs(w, vsubstChecked(inner, b));
+                    yield new Abs(v, vsub(sigma, b));
+                Var w = variant(vs, v);
+                sigma.put(v, w);
+                yield new Abs(w, vsub(sigma, b));
             }
         };
     }
 
     static Term inst(Map<Type.Var, Type> theta, Term t) {
         return switch (t) {
-            case Var v -> new Var(v.name(), Type.subst(theta, v.type()));
-            case Const c -> new Const(c.name(), Type.subst(theta, c.type()));
+            case Var v -> new Var(v.n(), Type.subst(theta, v.t()));
+            case Const c -> new Const(c.n(), Type.subst(theta, c.t()));
             case Comb(Term f, Term x) -> new Comb(inst(theta, f), inst(theta, x));
             case Abs(Var v, Term b) -> {
-                Set<Var> avoid = frees(b);
-                Var w = new Var(v.name(), Type.subst(theta, v.type()));
+                Set<Var> vs = frees(b);
+                Var w = new Var(v.n(), Type.subst(theta, v.t()));
                 boolean clash = false;
-                for (Var f : avoid)
+                for (Var f : vs)
                     if (!f.equals(v) && inst(theta, f).equals(w))
                         clash = true;
                 if (!clash)
                     yield new Abs(w, inst(theta, b));
-                w = variant(avoid, v);
+                w = variant(vs, v);
                 yield inst(theta, new Abs(w, vsubst(Map.of(v, w), b)));
             }
         };
@@ -186,30 +189,30 @@ public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
     }
 
     // precedence: 0 = anywhere, 1 = function position, 2 = argument position
-    private static void show(Term t, int prec, StringBuilder sb) {
+    private static void show(Term t, int p, StringBuilder sb) {
         switch (t) {
-            case Var v -> sb.append(v.name());
+            case Var v -> sb.append(v.n());
             case Const c -> {
-                if (Character.isLetter(c.name().charAt(0)))
-                    sb.append(c.name());
+                if (Character.isLetter(c.n().charAt(0)))
+                    sb.append(c.n());
                 else
-                    sb.append('(').append(c.name()).append(')');
+                    sb.append('(').append(c.n()).append(')');
             }
             case Comb(Term f, Term x) -> {
-                if (prec > 1)
+                if (p > 1)
                     sb.append('(');
                 show(f, 1, sb);
                 sb.append(' ');
                 show(x, 2, sb);
-                if (prec > 1)
+                if (p > 1)
                     sb.append(')');
             }
             case Abs(Var v, Term b) -> {
-                if (prec > 0)
+                if (p > 0)
                     sb.append('(');
-                sb.append('\\').append(v.name()).append(':').append(v.type()).append(". ");
+                sb.append('\\').append(v.n()).append(':').append(v.t()).append(". ");
                 show(b, 0, sb);
-                if (prec > 0)
+                if (p > 0)
                     sb.append(')');
             }
         }

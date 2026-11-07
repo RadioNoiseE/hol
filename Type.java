@@ -1,17 +1,18 @@
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 public sealed interface Type permits Type.Var, Type.App {
-    record Var(String name) implements Type {
+    record Var(String n) implements Type {
         @Override
         public String toString() {
             return Type.show(this);
         }
     }
 
-    record App(String op, List<Type> args) implements Type {
+    record App(String o, List<Type> a) implements Type {
         public App {
-            args = List.copyOf(args);
+            a = List.copyOf(a);
         }
 
         @Override
@@ -22,34 +23,39 @@ public sealed interface Type permits Type.Var, Type.App {
 
     Type BOOL = new App("bool", List.of());
 
-    static Var var(String name) {
-        return new Var(name);
+    static Var var(String n) {
+        return new Var(n);
     }
 
-    static Type fun(Type dom, Type ran) {
-        return new App("fun", List.of(dom, ran));
+    static Type fun(Type d, Type r) {
+        return new App("fun", List.of(d, r));
     }
 
     static boolean isFun(Type t) {
-        return t instanceof App(String op, List<Type> args) && op.equals("fun") && args.size() == 2;
+        return t instanceof App(String o, List<Type> a) && o.equals("fun") && a.size() == 2;
     }
 
     static Type domain(Type t) {
-        if (t instanceof App(String op, List<Type> args) && op.equals("fun") && args.size() == 2)
-            return args.get(0);
+        if (t instanceof App(String o, List<Type> a) && o.equals("fun") && a.size() == 2)
+            return a.get(0);
         throw new HolException("domain: not a function type: " + t);
     }
 
     static Type range(Type t) {
-        if (t instanceof App(String op, List<Type> args) && op.equals("fun") && args.size() == 2)
-            return args.get(1);
-        throw new HolException("domain: not a function type: " + t);
+        if (t instanceof App(String o, List<Type> a) && o.equals("fun") && a.size() == 2)
+            return a.get(1);
+        throw new HolException("range: not a function type: " + t);
     }
 
     static Type subst(Map<Var, Type> theta, Type t) {
         return switch (t) {
             case Var v -> theta.getOrDefault(v, v);
-            case App(String op, List<Type> args) -> new App(op, args.stream().map(a -> subst(theta, a)).toList());
+            case App(String o, List<Type> as) -> {
+                List<Type> l = new ArrayList<>();
+                for (Type a : as)
+                    l.add(subst(theta, a));
+                yield new App(o, l);
+            }
         };
     }
 
@@ -59,29 +65,29 @@ public sealed interface Type permits Type.Var, Type.App {
         return sb.toString();
     }
 
-    private static void show(Type t, boolean leftOfArrow, StringBuilder sb) {
+    private static void show(Type t, boolean left, StringBuilder sb) {
         switch (t) {
-            case Var v -> sb.append('\'').append(v.name());
-            case App(String _, List<Type> args) when isFun(t) -> {
-                if (leftOfArrow)
+            case Var v -> sb.append('\'').append(v.n());
+            case App(String _, List<Type> a) when isFun(t) -> {
+                if (left)
                     sb.append('(');
-                show(args.get(0), true, sb);
+                show(a.get(0), true, sb);
                 sb.append(" -> ");
-                show(args.get(1), false, sb);
-                if (leftOfArrow)
+                show(a.get(1), false, sb);
+                if (left)
                     sb.append(')');
             }
-            case App(String op, List<Type> args) -> {
-                if (!args.isEmpty()) {
+            case App(String o, List<Type> a) -> {
+                if (!a.isEmpty()) {
                     sb.append('(');
-                    for (int i = 0; i < args.size(); i++) {
+                    for (int i = 0; i < a.size(); i++) {
                         if (i > 0)
                             sb.append(", ");
-                        show(args.get(i), false, sb);
+                        show(a.get(i), false, sb);
                     }
                     sb.append(')');
                 }
-                sb.append(op);
+                sb.append(o);
             }
         }
     }
