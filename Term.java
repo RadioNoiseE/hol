@@ -46,6 +46,29 @@ public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
         }
     }
 
+    record Eq(Term l, Term r) {
+        // for holding two sides of equation
+    }
+
+    static Term mkEq(Term l, Term r) {
+        Type t = typeOf(l);
+        if (!t.equals(typeOf(r)))
+            throw new HolException(
+                    "mkEq: sides have different types: " + l + " : " + t + " and " + r + " : " + typeOf(r));
+        Const c = new Const("=", Type.fun(t, Type.fun(t, Type.BOOL)));
+        return new Comb(new Comb(c, l), r);
+    }
+
+    static boolean isEq(Term t) {
+        return t instanceof Comb(Comb(Const(String n, Type _), Term _), Term _) && n.equals("=");
+    }
+
+    static Eq destEq(Term t) {
+        if (t instanceof Comb(Comb(Const(String n, Type _), Term l), Term r) && n.equals("="))
+            return new Eq(l, r);
+        throw new HolException("destEq: not an equation: " + t);
+    }
+
     static Type typeOf(Term t) {
         return switch (t) {
             case Var v -> v.t();
