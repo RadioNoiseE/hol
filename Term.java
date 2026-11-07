@@ -75,7 +75,12 @@ public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
     }
 
     static boolean freeIn(Var v, Term t) {
-        return frees(t).contains(v);
+        return switch (t) {
+            case Var w -> w.equals(v);
+            case Const _ -> false;
+            case Comb(Term f, Term x) -> freeIn(v, f) || freeIn(v, x);
+            case Abs(Var w, Term b) -> !w.equals(v) && freeIn(v, b);
+        };
     }
 
     static boolean aconv(Term s, Term t) {
