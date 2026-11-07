@@ -1,3 +1,5 @@
+package hol;
+
 import java.util.Objects;
 
 public final class Check {
