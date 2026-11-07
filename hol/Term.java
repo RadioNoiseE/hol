@@ -112,9 +112,9 @@ public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
         return aconv(s, t, new ArrayDeque<>());
     }
 
-    private static boolean aconv(Term s, Term t, Deque<Pair> env) {
+    private static boolean aconv(Term s, Term t, Deque<Pair> e) {
         if (s instanceof Var v && t instanceof Var w) {
-            for (Pair p : env)
+            for (Pair p : e)
                 if (p.l().equals(v) || p.r().equals(w))
                     return p.l().equals(v) && p.r().equals(w);
             return v.equals(w);
@@ -122,15 +122,15 @@ public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
         if (s instanceof Const c && t instanceof Const d)
             return c.equals(d);
         if (s instanceof Comb(Term f, Term x) && t instanceof Comb(Term g, Term y))
-            return aconv(f, g, env) && aconv(x, y, env);
+            return aconv(f, g, e) && aconv(x, y, e);
         if (s instanceof Abs(Var v, Term b) && t instanceof Abs(Var w, Term c)) {
             if (!v.t().equals(w.t()))
                 return false;
-            env.push(new Pair(v, w));
+            e.push(new Pair(v, w));
             try {
-                return aconv(b, c, env);
+                return aconv(b, c, e);
             } finally {
-                env.pop();
+                e.pop();
             }
         }
         return false;

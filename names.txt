@@ -82,8 +82,8 @@ typeOf(t)        -> typeOf for type of, t for term (2c)
 frees(t)         -> frees for free variables, t for term (2c)
 freeIn(v, t)     -> freeIn for free in, v for var, t for term (2c)
 aconv(s, t)      -> aconv for alpha-conversion, s and t as reserved (2a)
-aconv(s, t, env) -> aconv for alpha-conversion, s and t as reserved (2a),
-                    env for environment (2d, 4b); w (4c), p (4e), d, g, y, c (4c)
+aconv(s, t, e)   -> aconv for alpha-conversion, s and t as reserved (2a),
+                    e for environment (2c); w (4c), p (4e), d, g, y, c (4c)
 variant(vs, v)   -> variant for variant, vs for vars (6), v for var (2c);
                     ns (6), n (4d)
 vsubst(theta, t) -> vsubst for v-substitution, theta as reserved (2a),
