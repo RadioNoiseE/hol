@@ -1,6 +1,7 @@
 package hol;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -59,6 +60,29 @@ public sealed interface Type permits Type.Var, Type.App {
                 yield new App(o, l);
             }
         };
+    }
+
+    static Map<Var, Type> match(Type p, Type t) {
+        return match(p, t, new HashMap<>());
+    }
+
+    private static Map<Var, Type> match(Type p, Type t, Map<Var, Type> theta) {
+        switch (p) {
+            case Var v -> {
+                Type u = theta.get(v);
+                if (u != null && !u.equals(t))
+                    throw new HolException("match: " + v + " cannot be both " + u + " and " + t);
+                theta.put(v, t);
+                return theta;
+            }
+            case App(String o, List<Type> as) -> {
+                if (!(t instanceof App(String o2, List<Type> bs)) || !o.equals(o2) || as.size() != bs.size())
+                    throw new HolException("match: " + p + " does not match " + t);
+                for (int i = 0; i < as.size(); i++)
+                    match(as.get(i), bs.get(i), theta);
+                return theta;
+            }
+        }
     }
 
     static String show(Type t) {

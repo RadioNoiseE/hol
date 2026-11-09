@@ -18,7 +18,8 @@ General Rules:
   b. a variable that matters across several lines: an abbreviation or
      a short word for its role;
   c. a value derived from a parameter or another local: the next
-     letter after that variable's letter, skipping reserved letters;
+     letter after that variable's letter, skipping reserved letters,
+     or append digit(s);
   d. the first letter of what the variable means;
   e. the capital letters of its type name, or the type's first letter;
   f. otherwise case by case, and add the result to the table.
@@ -52,18 +53,21 @@ HolException(m) -> HolException for hol exception, m for message (2b)
 
 Type.java:
 
-Var(n)            -> Var for variable, n for name (2b)
-App(o, a)         -> App for application, o for operator, a for arguments (2b)
-var(n)            -> var for variable, n for name (2b)
-fun(d, r)         -> fun for function, d for domain, r for range (2b)
-isFun(t)          -> isFun for is function, t for type (2c, 7)
-domain(t)         -> domain for domain, t for type (2c, 7)
-range(t)          -> range for range, t for type (2c, 7)
-subst(theta, t)   -> subst for substitution, theta as reserved (2a),
-                     t for type (2c, 7); a (4d), as (6), l (4e)
-show(t)           -> show for show, t for type (2c, 7); sb (4e)
-show(t, left, sb) -> show for show, left for left of arrow (5), sb
-                     for string builder (2c); i (4a)
+Var(n)             -> Var for variable, n for name (2b)
+App(o, a)          -> App for application, o for operator, a for arguments (2b)
+var(n)             -> var for variable, n for name (2b)
+fun(d, r)          -> fun for function, d for domain, r for range (2b)
+isFun(t)           -> isFun for is function, t for type (2c, 7)
+domain(t)          -> domain for domain, t for type (2c, 7)
+range(t)           -> range for range, t for type (2c, 7)
+subst(theta, t)    -> subst for substitution, theta as reserved (2a),
+                      t for type (2c, 7); a (4d), as (6), l (4e)
+match(p, t)        -> match for match, p for pattern, t for target (2b)
+match(p, t, theta) -> match for match, p for pattern, t for target (2b), theta
+                      as reserved (2a); u, o2, bs (4c), i (4a)
+show(t)            -> show for show, t for type (2c, 7); sb (4e)
+show(t, left, sb)  -> show for show, left for left of arrow (5), sb
+                      for string builder (2c); i (4a)
 
 
 Term.java:
@@ -74,7 +78,7 @@ Const(n, t)      -> Const for const, n for name (2b), t for type (2b, 7)
 Comb(f, x)       -> Comb for combination, f and x as reserved (2a); t (4e, 7)
 Abs(v, b)        -> Abs for abstraction, v for variable, b for body (2b)
 Eq(l, r)         -> Eq for equation, l for left, r for right (2b)
-mkEq(l, r)       -> mkEq for make equation, l for left, r for right (2b)
+mkEq(l, r)       -> mkEq for make equation, l for left, r for right (2b);
                     t (4e, 7), c (4e)
 isEq(t)          -> isEq for is equation, t for term (2c); n (4d)
 destEq(t)        -> destEq for destruct equation, t for term (2c); n, l, r (4d)
