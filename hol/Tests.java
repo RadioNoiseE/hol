@@ -16,6 +16,7 @@ public class Tests {
         instTests();
         eqTests();
         thmTests();
+        matchTests();
         Check.report();
     }
 
@@ -116,6 +117,14 @@ public class Tests {
         Check.checkHold("inst " + theta + " in " + t + "  ~  " + expected
                 + "   (got " + actual + ")",
                 Term.aconv(expected, actual));
+    }
+
+    static void matchEq(Map<Type.Var, Type> expected, Type p, Type t) {
+        Check.checkEqual("match " + p + " against " + t, expected, Type.match(p, t));
+    }
+
+    static void noMatch(Type p, Type t) {
+        Check.checkThrow("no match: " + p + " against " + t, () -> Type.match(p, t));
     }
 
     static void typeTests() {
@@ -301,5 +310,41 @@ public class Tests {
         Check.checkEqual("assume: hypotheses", List.of(p), Thm.assume(p).hyps());
         Check.checkEqual("assume: conclusion", p, Thm.assume(p).concl());
         Check.checkThrow("assume needs a proposition", () -> Thm.assume(x));
+    }
+
+    static void matchTests() {
+        // variables in the pattern
+        matchEq(Map.of(A, BOOL), A, BOOL);
+        matchEq(Map.of(A, A), A, A);
+        matchEq(Map.of(A, fun(B, B)), A, fun(B, B));
+
+        // no variables in the pattern
+        matchEq(Map.of(), BOOL, BOOL);
+        noMatch(BOOL, A); // the pattern is not more general
+
+        // function types
+        matchEq(Map.of(A, BOOL), fun(A, A), fun(BOOL, BOOL));
+        matchEq(Map.of(A, BOOL, B, BOOL), fun(A, B), fun(BOOL, BOOL));
+        matchEq(Map.of(A, fun(B, B)), fun(A, BOOL), fun(fun(B, B), BOOL));
+        matchEq(Map.of(A, B, B, A), fun(A, B), fun(B, A)); // pattern and target variables are separate
+        noMatch(fun(A, A), fun(BOOL, B)); // a cannot be both bool and b
+        noMatch(fun(A, BOOL), BOOL);
+
+        // -> is right-associative
+        matchEq(Map.of(A, fun(B, B)), fun(A, A), fun(fun(B, B), fun(B, B))); // ('b -> 'b) -> 'b -> 'b
+        noMatch(fun(A, A), fun(B, B, B, B)); // 'b -> 'b -> 'b -> 'b
+
+        // other type operators
+        matchEq(Map.of(A, BOOL), op("list", A), op("list", BOOL));
+        matchEq(Map.of(A, BOOL, B, B), op("triple", A, B, A), op("triple", BOOL, B, BOOL));
+        noMatch(op("triple", A, A, A), op("triple", BOOL, B, BOOL));
+        noMatch(op("list", A), op("prod", A, A)); // different operators
+        noMatch(op("list", A), op("list", BOOL, BOOL)); // target has more arguments
+        noMatch(op("list", A, A), op("list", BOOL)); // target has fewer arguments
+
+        // what match means: substituting the result into the pattern gives the target
+        Type q = fun(A, fun(B, A));
+        Type r = fun(BOOL, fun(fun(A, A), BOOL));
+        Check.checkEqual("subst(match(q, r), q) = r", r, Type.subst(Type.match(q, r), q));
     }
 }
