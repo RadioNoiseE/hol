@@ -17,6 +17,7 @@ public class Tests {
         eqTests();
         thmTests();
         matchTests();
+        constTests();
         Check.report();
     }
 
@@ -36,6 +37,12 @@ public class Tests {
     static final Term.Var fb = var("f", fun(BOOL, BOOL));
     static final Term.Var g = var("g", fun(A, A, A));
     static final Term.Var h = var("h", fun(fun(A, A), A));
+
+    static {
+        Sig.newConst("c", A);
+        Sig.newConst("x", A); // a constant with the same name as the variable x
+    }
+
     static final Term.Const c = new Term.Const("c", A);
 
     static Type fun(Type... types) {
@@ -343,8 +350,23 @@ public class Tests {
         noMatch(op("list", A, A), op("list", BOOL)); // target has fewer arguments
 
         // what match means: substituting the result into the pattern gives the target
-        Type q = fun(A, fun(B, A));
-        Type r = fun(BOOL, fun(fun(A, A), BOOL));
-        Check.checkEqual("subst(match(q, r), q) = r", r, Type.subst(Type.match(q, r), q));
+        Type Q = fun(A, fun(B, A));
+        Type R = fun(BOOL, fun(fun(A, A), BOOL));
+        Check.checkEqual("subst(match(q, r), q) = r", R, Type.subst(Type.match(Q, R), Q));
+    }
+
+    static void constTests() {
+        Check.checkEqual("= is declared as 'a -> 'a -> bool", fun(A, A, BOOL), Sig.constType("="));
+        Check.checkThrow("constType of an undeclared name", () -> Sig.constType("undeclared"));
+        Check.checkThrow("a constant cannot be declared twice", () -> Sig.newConst("=", BOOL));
+
+        Check.checkHold("= at bool -> bool -> bool",
+                new Term.Const("=", fun(BOOL, BOOL, BOOL)).t().equals(fun(BOOL, BOOL, BOOL)));
+        Check.checkThrow("= cannot have type bool", () -> new Term.Const("=", BOOL));
+        Check.checkThrow("= needs both arguments of the same type",
+                () -> new Term.Const("=", fun(BOOL, A, BOOL)));
+        Check.checkThrow("undeclared constants are rejected", () -> new Term.Const("undeclared", A));
+        Check.checkEqual("c, declared at 'a, can be used at bool",
+                BOOL, new Term.Const("c", BOOL).t());
     }
 }
