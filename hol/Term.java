@@ -21,6 +21,15 @@ public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
     }
 
     record Const(String n, Type t) implements Term {
+        public Const {
+            Type g = Sig.constType(n);
+            try {
+                Type.match(g, t);
+            } catch (HolException e) {
+                throw new HolException("Const: " + n + " cannot have type " + t + " as its declared type is " + g);
+            }
+        }
+
         @Override
         public String toString() {
             return Term.show(this);
