@@ -2,7 +2,8 @@ General Rules:
 
 1. Records, methods and constants: an idiomatic abbreviation or the
    full word.  If HOL Light has the operation, use its name in camel
-   case.  These need no annotation.
+   case and abbreviate consistently if desired.  These need no
+   annotation.
 
 2. Parameters and record components, in order of preference:
    a. a reserved name from the table below;
@@ -110,3 +111,11 @@ concl()    -> concl for conclusion
 toString() -> toString for to string, sb for string builder (2c); i (4a)
 refl(t)    -> refl for reflection, t for term (2c)
 assume(t)  -> assume for assume, t for term (2c)
+
+
+Sig.java:
+
+consts         -> consts for constants
+Sig()          -> Sig for signature
+newConst(n, t) -> newConst for new constant, n for name (2b), t for type (2c)
+constType(n)   -> constType for constant type, n for name (2b)
