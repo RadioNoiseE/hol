@@ -5,6 +5,21 @@ import java.util.List;
 import java.util.Map;
 
 public final class Thm {
+    private static final List<Thm> axioms = new ArrayList<>();
+
+    // NEW_AXIOM: p ==> |- p
+    public static Thm newAxiom(Term t) {
+        if (!Term.typeOf(t).equals(Type.BOOL))
+            throw new HolException("newAxiom: not a proposition: " + t);
+        Thm th = new Thm(List.of(), t);
+        axioms.add(th);
+        return th;
+    }
+
+    public static List<Thm> axioms() {
+        return List.copyOf(axioms);
+    }
+
     private final List<Term> hyps;
     private final Term concl;
 
@@ -33,20 +48,6 @@ public final class Thm {
             sb.append(' ');
         sb.append("|- ").append(concl);
         return sb.toString();
-    }
-
-    private static final List<Thm> axioms = new ArrayList<>();
-
-    public static Thm newAxiom(Term t) {
-        if (!Term.typeOf(t).equals(Type.BOOL))
-            throw new HolException("newAxiom: not a proposition: " + t);
-        Thm th = new Thm(List.of(), t);
-        axioms.add(th);
-        return th;
-    }
-
-    public static List<Thm> axioms() {
-        return List.copyOf(axioms);
     }
 
     private static boolean contains(List<Term> ts, Term s) {
