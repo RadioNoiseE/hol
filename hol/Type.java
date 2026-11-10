@@ -75,8 +75,8 @@ public sealed interface Type permits Type.Var, Type.App {
                 theta.put(v, t);
                 return theta;
             }
-            case App(String o, List<Type> as) -> {
-                if (!(t instanceof App(String o2, List<Type> bs)) || !o.equals(o2) || as.size() != bs.size())
+            case App(String o1, List<Type> as) -> {
+                if (!(t instanceof App(String o2, List<Type> bs)) || !o1.equals(o2) || as.size() != bs.size())
                     throw new HolException("match: " + p + " does not match " + t);
                 for (int i = 0; i < as.size(); i++)
                     match(as.get(i), bs.get(i), theta);
