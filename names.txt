@@ -95,7 +95,7 @@ tyvars(t)        -> tyvars for type variables, t for term (2c); vs (4e, 6)
 freeIn(v, t)     -> freeIn for free in, v for var, t for term (2c)
 aconv(s, t)      -> aconv for alpha-conversion, s and t as reserved (2a)
 aconv(s, t, e)   -> aconv for alpha-conversion, s and t as reserved (2a),
-                    e for environment (2c); w (4c), p (4e), d, g, y, c (4c)
+                    e for environment (2b); w (4c), p (4e), d, g, y, c (4c)
 variant(vs, v)   -> variant for variant, vs for vars (6), v for var (2c);
                     ns (6), n (4d)
 vsubst(theta, t) -> vsubst for v-substitution, theta as reserved (2a),
@@ -112,19 +112,19 @@ show(t, p, sb)   -> show for show, t for term (2c), p for precedence (2b),
 
 Thm.java:
 
+axioms             -> axioms for axioms
+newAxiom(t)        -> newAxiom for new axiom, t for term (2a); th (4a)
 Thm(h, c)          -> Thm for theorem, h for hypothesis, c for conclusion (2b)
-hyps()             -> hyps for hypothesis
+hyps()             -> hyps for hypotheses
 concl()            -> concl for conclusion
 toString()         -> toString for to string, sb for string builder (2c);
                       i (4a)
-axioms             -> axioms for axioms
-newAxiom(t)        -> newAxiom for new axiom, t for term (2a); th (4a)
 contains(ts, s)    -> contains for contains, ts for terms (2a, 6), s for term
                       (2a); t (4a)
 union(ss, ts)      -> union for union, ss for terms, ts for terms (2a, 6);
                       us (4a, 6), t (4a)
 remove(ts, s)      -> remove for remove, ts for terms (2a, 6), s for term (2a);
-                      us (4a, t), t (4a)
+                      us (4a, 6), t (4a)
 refl(t)            -> refl for reflection, t for term (2c)
 trans(t1, t2)      -> trans for transitivity, t1 for theorem, t2 for theorem
                       (2c, 2d); e1, e2 (4c, 4d)
@@ -140,8 +140,8 @@ dar(t1, t2)        -> dar for deduct antisym rule, t1 for theorem, t2 for
                       theorem (2c, 2d); h1, h2 (4c, 4d)
 inst(theta, t)     -> inst for instantiate, theta as reserved (2a), t for
                       theorem (2c); hs (4c, 4d), h (4d)
-instType(theta, t) -> inst for instantiate type, theta as reserved (2a), t for
-                      theorem (2c); hs (4c, 4d), h (4d)
+instType(theta, t) -> instType for instantiate type, theta as reserved (2a),
+                      t for theorem (2c); hs (4c, 4d), h (4d)
 newBasicDef(t)     -> newBasicDef for new basic definition, t for term (2c);
                       e (4e)
 
