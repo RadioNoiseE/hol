@@ -10,7 +10,9 @@ General Rules:
    b. the first letter of what the variable means;
    c. the capital letters of its type name, or the type's first
       letter;
-   d. otherwise case by case, and add the result to the table.
+   d. several parameters with the same role and type: the same name
+      with digits appended to all of them
+   e. otherwise case by case, and add the result to the table.
 
 3. Fields: an idiomatic abbreviation or the full word.
 
@@ -106,12 +108,23 @@ show(t, p, sb)   -> show for show, t for term (2c), p for precedence (2b),
 
 Thm.java:
 
-Thm(h, c)  -> Thm for theorem, h for hypothesis, c for conclusion (2b)
-hyps()     -> hyps for hypothesis
-concl()    -> concl for conclusion
-toString() -> toString for to string, sb for string builder (2c); i (4a)
-refl(t)    -> refl for reflection, t for term (2c)
-assume(t)  -> assume for assume, t for term (2c)
+Thm(h, c)       -> Thm for theorem, h for hypothesis, c for conclusion (2b)
+hyps()          -> hyps for hypothesis
+concl()         -> concl for conclusion
+toString()      -> toString for to string, sb for string builder (2c); i (4a)
+contains(ts, s) -> contains for contains, ts for terms (2a, 6), s for term (2a);
+                   t (4a)
+union(ss, ts)   -> union for union, ss for terms, ts for terms (2a, 6);
+                   us (4a, 6), t (4a)
+refl(t)         -> refl for reflection, t for term (2c)
+trans(t1, t2)   -> trans for transitivity, t1 for theorem, t2 for theorem
+                   (2c, 2d); e1, e2 (4c)
+mkComb(t1, t2)  -> mkComb for make combination, t1 for theorem, t2 for theorem
+                   (2c, 2d); e1, e2 (4c)
+abs(v, t)       -> abs for abstraction, v for var, t for theorem (2c); e (4e),
+                   h (4c)
+beta(t)         -> beta for beta, t for term (2c)
+assume(t)       -> assume for assume, t for term (2c)
 
 
 Sig.java:
