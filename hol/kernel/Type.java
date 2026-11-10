@@ -68,18 +68,6 @@ public sealed interface Type permits Type.Var, Type.App {
         return match(p, t, new HashMap<>());
     }
 
-    static Set<Var> tyvars(Type t) {
-        Set<Var> vs = new LinkedHashSet<>();
-        switch (t) {
-            case Var v -> vs.add(v);
-            case App(String _, List<Type> as) -> {
-                for (Type a : as)
-                    vs.addAll(tyvars(a));
-            }
-        }
-        return vs;
-    }
-
     private static Map<Var, Type> match(Type p, Type t, Map<Var, Type> theta) {
         switch (p) {
             case Var v -> {
@@ -97,6 +85,18 @@ public sealed interface Type permits Type.Var, Type.App {
                 return theta;
             }
         }
+    }
+
+    static Set<Var> tyvars(Type t) {
+        Set<Var> vs = new LinkedHashSet<>();
+        switch (t) {
+            case Var v -> vs.add(v);
+            case App(String _, List<Type> as) -> {
+                for (Type a : as)
+                    vs.addAll(tyvars(a));
+            }
+        }
+        return vs;
     }
 
     static String show(Type t) {
