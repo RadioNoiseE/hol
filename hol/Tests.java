@@ -18,6 +18,10 @@ public class Tests {
         thmTests();
         matchTests();
         constTests();
+        transTests();
+        mkCombTests();
+        absTests();
+        betaTests();
         Check.report();
     }
 
@@ -368,5 +372,53 @@ public class Tests {
         Check.checkThrow("undeclared constants are rejected", () -> new Term.Const("undeclared", A));
         Check.checkEqual("c, declared at 'a, can be used at bool",
                 BOOL, new Term.Const("c", BOOL).t());
+    }
+
+    static void transTests() {
+        prints("|- x = x", Thm.trans(Thm.refl(x), Thm.refl(x)));
+        prints("x = y, y = z |- x = z", Thm.trans(Thm.assume(eq(x, y)), Thm.assume(eq(y, z))));
+        Check.checkEqual("trans: the middle terms may differ up to renaming", eq(f, f),
+                Thm.trans(Thm.assume(eq(f, lam(x, x))), Thm.assume(eq(lam(y, y), f))).concl());
+        Check.checkThrow("trans: middle terms must agree",
+                () -> Thm.trans(Thm.assume(eq(x, y)), Thm.assume(eq(x, z))));
+        Check.checkThrow("trans: first theorem must be an equation",
+                () -> Thm.trans(Thm.assume(p), Thm.refl(p)));
+        Check.checkThrow("trans: second theorem must be an equation",
+                () -> Thm.trans(Thm.refl(p), Thm.assume(p)));
+    }
+
+    static void mkCombTests() {
+        prints("|- f x = f x", Thm.mkComb(Thm.refl(f), Thm.refl(x)));
+        prints("x = y |- f x = f y", Thm.mkComb(Thm.refl(f), Thm.assume(eq(x, y))));
+        prints("f = h', x = y |- f x = h' y",
+                Thm.mkComb(Thm.assume(eq(f, var("h'", fun(A, A)))), Thm.assume(eq(x, y))));
+        Check.checkThrow("mkComb: argument type must fit", () -> Thm.mkComb(Thm.refl(f), Thm.refl(p)));
+        Check.checkThrow("mkComb: first theorem must be an equation",
+                () -> Thm.mkComb(Thm.assume(p), Thm.refl(x)));
+        Check.checkThrow("mkComb: second theorem must be an equation",
+                () -> Thm.mkComb(Thm.refl(f), Thm.assume(p)));
+
+        // hypotheses that are equal up to renaming are kept once
+        Thm th1 = Thm.assume(eq(lam(x, x), f));
+        Thm th2 = Thm.mkComb(Thm.assume(eq(lam(z, z), f)), Thm.refl(x));
+        Check.checkEqual("mkComb: alpha-equivalent hypotheses are merged",
+                1, Thm.mkComb(th1, th2).hyps().size());
+    }
+
+    static void absTests() {
+        prints("|- (\\x:'a. f x) = (\\x:'a. f x)", Thm.abs(x, Thm.refl(app(f, x))));
+        prints("x = z |- (\\y:'a. x) = (\\y:'a. z)", Thm.abs(y, Thm.assume(eq(x, z))));
+        Check.checkThrow("abs: the variable must not be free in a hypothesis",
+                () -> Thm.abs(x, Thm.assume(eq(x, y))));
+        Check.checkThrow("abs: the theorem must be an equation", () -> Thm.abs(x, Thm.assume(p)));
+    }
+
+    static void betaTests() {
+        prints("|- (\\x:'a. f x) x = f x", Thm.beta(app(lam(x, app(f, x)), x)));
+        prints("|- (\\x:'a. x) x = x", Thm.beta(app(lam(x, x), x)));
+        Check.checkThrow("beta: the argument must be the bound variable",
+                () -> Thm.beta(app(lam(x, x), y)));
+        Check.checkThrow("beta: an application of a variable is not a redex", () -> Thm.beta(app(f, x)));
+        Check.checkThrow("beta: a variable is not a redex", () -> Thm.beta(x));
     }
 }
