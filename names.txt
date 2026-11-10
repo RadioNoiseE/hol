@@ -68,7 +68,8 @@ subst(theta, t)    -> subst for substitution, theta as reserved (2a),
 match(p, t)        -> match for match, p for pattern, t for target (2b)
 match(p, t, theta) -> match for match, p for pattern, t for target (2b), theta
                       as reserved (2a); u, o2, bs (4c), i (4a)
-tyvars(t)          -> tyvars for type variables, t for type (2c, 7); as (4d, 6)
+tyvars(t)          -> tyvars for type variables, t for type (2c, 7); vs (4e, d),
+                      as (4d, 6)
 show(t)            -> show for show, t for type (2c, 7); sb (4e)
 show(t, left, sb)  -> show for show, left for left of arrow (5), sb
                       for string builder (2c); i (4a)
@@ -88,7 +89,8 @@ mkEq(l, r)       -> mkEq for make equation, l for left, r for right (2b);
 isEq(t)          -> isEq for is equation, t for term (2c); n (4d)
 destEq(t)        -> destEq for destruct equation, t for term (2c); n, l, r (4d)
 typeOf(t)        -> typeOf for type of, t for term (2c)
-frees(t)         -> frees for free variables, t for term (2c)
+frees(t)         -> frees for free variables, t for term (2c); vs (4e, 6)
+tyvars(t)        -> tyvars for type variables, t for term (2c); vs (4e, 6)
 freeIn(v, t)     -> freeIn for free in, v for var, t for term (2c)
 aconv(s, t)      -> aconv for alpha-conversion, s and t as reserved (2a)
 aconv(s, t, e)   -> aconv for alpha-conversion, s and t as reserved (2a),
