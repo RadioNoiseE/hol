@@ -27,6 +27,9 @@ public class Tests {
         darTests();
         thmInstTests();
         instTypeTests();
+        tyvarsTests();
+        axiomTests();
+        defTests();
         Check.report();
     }
 
@@ -485,5 +488,43 @@ public class Tests {
         // capture is avoided, exactly as in Term.inst
         Term concl = Thm.instType(Map.of(B, A), Thm.refl(lam(x, xb))).concl();
         alpha(eq(lam(z, x), lam(z, x)), concl);
+    }
+
+    static void tyvarsTests() {
+        Check.checkEqual("tyvars of bool", Set.of(), Type.tyvars(BOOL));
+        Check.checkEqual("tyvars in order", List.of(B, A), List.copyOf(Type.tyvars(fun(B, fun(A, B)))));
+        Check.checkEqual("tyvars of a term", List.of(A),
+                List.copyOf(Term.tyvars(lam(x, app(f, x)))));
+        Check.checkEqual("tyvars include bound variables' types", Set.of(A),
+                Term.tyvars(eq(lam(x, x), lam(x, x))));
+    }
+
+    static void axiomTests() {
+        Thm ax = Thm.newAxiom(eq(c, c)); // harmless: REFL proves it anyway
+        prints("|- c = c", ax);
+        Check.checkHold("axioms() lists it", Thm.axioms().contains(ax));
+        Check.checkThrow("an axiom must be a proposition", () -> Thm.newAxiom(x));
+    }
+
+    static void defTests() {
+        Term.Var i = var("I", fun(A, A));
+        Thm th = Thm.newBasicDef(eq(i, lam(x, x)));
+        prints("|- I = (\\x:'a. x)", th);
+        Check.checkHold("the left side is now a constant",
+                Term.destEq(th.concl()).l() instanceof Term.Const);
+        Check.checkEqual("I is declared with the type of its definition", fun(A, A), Sig.constType("I"));
+        Check.checkEqual("I can be used at an instance of its type", fun(BOOL, BOOL),
+                new Term.Const("I", fun(BOOL, BOOL)).t());
+
+        Check.checkThrow("cannot define a name twice",
+                () -> Thm.newBasicDef(eq(i, lam(y, y))));
+        Check.checkThrow("the right side must have no free variables",
+                () -> Thm.newBasicDef(eq(var("bad1", A), x)));
+        Check.checkThrow("a failed definition declares nothing", () -> Sig.constType("bad1"));
+        Check.checkThrow("type variables of the right side must occur in the constant's type",
+                () -> Thm.newBasicDef(eq(var("bad2", BOOL), eq(lam(x, x), lam(x, x)))));
+        Check.checkThrow("the left side must be a variable",
+                () -> Thm.newBasicDef(eq(c, c)));
+        Check.checkThrow("the definition must be an equation", () -> Thm.newBasicDef(p));
     }
 }
