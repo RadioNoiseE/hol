@@ -22,6 +22,10 @@ public class Tests {
         mkCombTests();
         absTests();
         betaTests();
+        eqMpTests();
+        darTests();
+        thmInstTests();
+        instTypeTests();
         Check.report();
     }
 
@@ -420,5 +424,65 @@ public class Tests {
                 () -> Thm.beta(app(lam(x, x), y)));
         Check.checkThrow("beta: an application of a variable is not a redex", () -> Thm.beta(app(f, x)));
         Check.checkThrow("beta: a variable is not a redex", () -> Thm.beta(x));
+    }
+
+    static void eqMpTests() {
+        Term.Var q = var("q", BOOL);
+
+        prints("p |- p", Thm.eqMp(Thm.refl(p), Thm.assume(p)));
+        prints("p = q, p |- q", Thm.eqMp(Thm.assume(eq(p, q)), Thm.assume(p)));
+        Check.checkEqual("eqMp: the antecedent may differ up to renaming", p,
+                Thm.eqMp(Thm.assume(eq(eq(lam(x, x), f), p)), Thm.assume(eq(lam(y, y), f))).concl());
+        Check.checkThrow("eqMp: first theorem must be an equation",
+                () -> Thm.eqMp(Thm.assume(p), Thm.assume(p)));
+        Check.checkThrow("eqMp: second theorem must match the left side",
+                () -> Thm.eqMp(Thm.assume(eq(p, q)), Thm.assume(q)));
+    }
+
+    static void darTests() {
+        Term.Var q = var("q", BOOL);
+
+        prints("|- p = p", Thm.dar(Thm.assume(p), Thm.assume(p)));
+        prints("p, q |- p = q", Thm.dar(Thm.assume(p), Thm.assume(q)));
+        Check.checkEqual("dar: hypotheses are removed up to renaming", List.of(),
+                Thm.dar(Thm.assume(eq(lam(x, x), f)),
+                        Thm.assume(eq(lam(y, y), f))).hyps());
+
+        // p is removed from the second theorem's hypotheses, but stays as the first
+        // one's own
+        Thm qFromPq = Thm.eqMp(Thm.assume(eq(p, q)), Thm.assume(p)); // p = q, p |- q
+        prints("p, p = q |- p = q", Thm.dar(Thm.assume(p), qFromPq));
+    }
+
+    static void thmInstTests() {
+        prints("|- y = y", Thm.inst(Map.of(x, y), Thm.refl(x)));
+        prints("y = z |- y = z", Thm.inst(Map.of(x, y), Thm.assume(eq(x, z)))); // hypotheses too
+        Check.checkThrow("inst: replacement must have the variable's type",
+                () -> Thm.inst(Map.of(x, p), Thm.refl(x)));
+
+        // hypotheses that become equal are kept once
+        Thm two = Thm.dar(Thm.assume(eq(x, y)), Thm.assume(eq(z, y)));
+        Check.checkEqual("inst: two hypotheses before", 2, two.hyps().size());
+        Check.checkEqual("inst: merged into one", 1, Thm.inst(Map.of(z, x), two).hyps().size());
+
+        // capture is avoided, exactly as in vsubst
+        Term concl = Thm.inst(Map.of(y, x), Thm.refl(lam(x, y))).concl();
+        alpha(eq(lam(z, x), lam(z, x)), concl);
+    }
+
+    static void instTypeTests() {
+        Check.checkEqual("instType: conclusion", eq(xB, xB),
+                Thm.instType(Map.of(A, BOOL), Thm.refl(x)).concl());
+        Check.checkEqual("instType: hypotheses too", List.of(eq(xB, yB)),
+                Thm.instType(Map.of(A, BOOL), Thm.assume(eq(x, y))).hyps());
+
+        // hypotheses that become equal are kept once
+        Thm two = Thm.dar(Thm.assume(eq(x, x)), Thm.assume(eq(xb, xb)));
+        Check.checkEqual("instType: two hypotheses before", 2, two.hyps().size());
+        Check.checkEqual("instType: merged into one", 1, Thm.instType(Map.of(B, A), two).hyps().size());
+
+        // capture is avoided, exactly as in Term.inst
+        Term concl = Thm.instType(Map.of(B, A), Thm.refl(lam(x, xb))).concl();
+        alpha(eq(lam(z, x), lam(z, x)), concl);
     }
 }
