@@ -27,4 +27,8 @@ public final class Sig {
             throw new HolException("constType: " + n + " is not a declared constant");
         return t;
     }
+
+    public static Map<String, Type> consts() {
+        return Map.copyOf(consts);
+    }
 }
