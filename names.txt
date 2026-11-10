@@ -68,6 +68,7 @@ subst(theta, t)    -> subst for substitution, theta as reserved (2a),
 match(p, t)        -> match for match, p for pattern, t for target (2b)
 match(p, t, theta) -> match for match, p for pattern, t for target (2b), theta
                       as reserved (2a); u, o2, bs (4c), i (4a)
+tyvars(t)          -> tyvars for type variables, t for type (2c, 7); as (4d, 6)
 show(t)            -> show for show, t for type (2c, 7); sb (4e)
 show(t, left, sb)  -> show for show, left for left of arrow (5), sb
                       for string builder (2c); i (4a)

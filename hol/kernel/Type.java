@@ -2,8 +2,10 @@ package hol.kernel;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public sealed interface Type permits Type.Var, Type.App {
     record Var(String n) implements Type {
@@ -64,6 +66,18 @@ public sealed interface Type permits Type.Var, Type.App {
 
     static Map<Var, Type> match(Type p, Type t) {
         return match(p, t, new HashMap<>());
+    }
+
+    static Set<Var> tyvars(Type t) {
+        Set<Var> vs = new LinkedHashSet<>();
+        switch (t) {
+            case Var v -> vs.add(v);
+            case App(String _, List<Type> as) -> {
+                for (Type a : as)
+                    vs.addAll(tyvars(a));
+            }
+        }
+        return vs;
     }
 
     private static Map<Var, Type> match(Type p, Type t, Map<Var, Type> theta) {
