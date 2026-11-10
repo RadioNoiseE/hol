@@ -2,6 +2,7 @@ package hol;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public final class Thm {
     private final List<Term> hyps;
@@ -45,6 +46,14 @@ public final class Thm {
         List<Term> us = new ArrayList<>(ss);
         for (Term t : ts)
             if (!contains(us, t))
+                us.add(t);
+        return us;
+    }
+
+    private static List<Term> remove(List<Term> ts, Term s) {
+        List<Term> us = new ArrayList<>();
+        for (Term t : ts)
+            if (!Term.aconv(t, s))
                 us.add(t);
         return us;
     }
@@ -94,5 +103,36 @@ public final class Thm {
         if (!Term.typeOf(t).equals(Type.BOOL))
             throw new HolException("assume: not a proposition: " + t + " : " + Term.typeOf(t));
         return new Thm(List.of(t), t);
+    }
+
+    // EQ_MP: A |- p = q, B |- p ==> A \/ B |- q
+    public static Thm eqMp(Thm t1, Thm t2) {
+        Term.Eq e = Term.destEq(t1.concl);
+        if (!Term.aconv(e.l(), t2.concl))
+            throw new HolException("eqMp: " + t2.concl + " is not the left side of " + t1.concl);
+        return new Thm(union(t1.hyps, t2.hyps), e.r());
+    }
+
+    // DAR: A |- p, B |- q ==> (A - {q}) \/ (B - {p}) |- p = q
+    public static Thm dar(Thm t1, Thm t2) {
+        List<Term> h1 = remove(t1.hyps, t2.concl);
+        List<Term> h2 = remove(t2.hyps, t1.concl);
+        return new Thm(union(h1, h2), Term.mkEq(t1.concl, t2.concl));
+    }
+
+    // INST: A |- p ==> theta(A) |- theta(p)
+    public static Thm inst(Map<Term.Var, Term> theta, Thm t) {
+        List<Term> hs = new ArrayList<>();
+        for (Term h : t.hyps)
+            hs.add(Term.vsubst(theta, h));
+        return new Thm(union(List.of(), hs), Term.vsubst(theta, t.concl));
+    }
+
+    // INST_TYPE: A |- p ==> theta(A) |- theta(p)
+    public static Thm instType(Map<Type.Var, Type> theta, Thm t) {
+        List<Term> hs = new ArrayList<>();
+        for (Term h : t.hyps)
+            hs.add(Term.inst(theta, h));
+        return new Thm(union(List.of(), hs), Term.inst(theta, t.concl));
     }
 }

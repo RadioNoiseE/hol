@@ -108,23 +108,34 @@ show(t, p, sb)   -> show for show, t for term (2c), p for precedence (2b),
 
 Thm.java:
 
-Thm(h, c)       -> Thm for theorem, h for hypothesis, c for conclusion (2b)
-hyps()          -> hyps for hypothesis
-concl()         -> concl for conclusion
-toString()      -> toString for to string, sb for string builder (2c); i (4a)
-contains(ts, s) -> contains for contains, ts for terms (2a, 6), s for term (2a);
-                   t (4a)
-union(ss, ts)   -> union for union, ss for terms, ts for terms (2a, 6);
-                   us (4a, 6), t (4a)
-refl(t)         -> refl for reflection, t for term (2c)
-trans(t1, t2)   -> trans for transitivity, t1 for theorem, t2 for theorem
-                   (2c, 2d); e1, e2 (4c)
-mkComb(t1, t2)  -> mkComb for make combination, t1 for theorem, t2 for theorem
-                   (2c, 2d); e1, e2 (4c)
-abs(v, t)       -> abs for abstraction, v for var, t for theorem (2c); e (4e),
-                   h (4c)
-beta(t)         -> beta for beta, t for term (2c)
-assume(t)       -> assume for assume, t for term (2c)
+Thm(h, c)          -> Thm for theorem, h for hypothesis, c for conclusion (2b)
+hyps()             -> hyps for hypothesis
+concl()            -> concl for conclusion
+toString()         -> toString for to string, sb for string builder (2c);
+                      i (4a)
+contains(ts, s)    -> contains for contains, ts for terms (2a, 6), s for term
+                      (2a); t (4a)
+union(ss, ts)      -> union for union, ss for terms, ts for terms (2a, 6);
+                      us (4a, 6), t (4a)
+remove(ts, s)      -> remove for remove, ts for terms (2a, 6), s for term (2a);
+                      us (4a, t), t (4a)
+refl(t)            -> refl for reflection, t for term (2c)
+trans(t1, t2)      -> trans for transitivity, t1 for theorem, t2 for theorem
+                      (2c, 2d); e1, e2 (4c, 4d)
+mkComb(t1, t2)     -> mkComb for make combination, t1 for theorem, t2 for
+                      theorem (2c, 2d); e1, e2 (4c, 4d)
+abs(v, t)          -> abs for abstraction, v for var, t for theorem (2c); e (4e),
+                      h (4c)
+beta(t)            -> beta for beta, t for term (2c)
+assume(t)          -> assume for assume, t for term (2c)
+eqMp(t1, t2)       -> eqMp for equality modus ponens, t1 for theorem, t2 for
+                      theorem (2c, 2d); e (4c)
+dar(t1, t2)        -> dar for deduct antisym rule, t1 for theorem, t2 for
+                      theorem (2c, 2d); h1, h2 (4c, 4d)
+inst(theta, t)     -> inst for instantiate, theta as reserved (2a), t for
+                      theorem (2c); hs (4c, 4d), h (4d)
+instType(theta, t) -> inst for instantiate type, theta as reserved (2a), t for
+                      theorem (2c); hs (4c, 4d), h (4d)
 
 
 Sig.java:
