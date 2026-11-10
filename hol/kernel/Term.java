@@ -129,13 +129,9 @@ public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
         return switch (t) {
             case Var w -> w.equals(v);
             case Const _ -> false;
-            case
-
-                    Comb(Term f, Term x) ->
+            case Comb(Term f, Term x) ->
                 freeIn(v, f) || freeIn(v, x);
-            case
-
-                    Abs(Var w, Term b) ->
+            case Abs(Var w, Term b) ->
                 !w.equals(v) && freeIn(v, b);
         };
     }
@@ -153,17 +149,9 @@ public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
         }
         if (s instanceof Const c && t instanceof Const d)
             return c.equals(d);
-        if (s instanceof
-
-        Comb(Term f, Term x) && t instanceof
-
-        Comb(Term g, Term y))
+        if (s instanceof Comb(Term f, Term x) && t instanceof Comb(Term g, Term y))
             return aconv(f, g, e) && aconv(x, y, e);
-        if (s instanceof
-
-        Abs(Var v, Term b) && t instanceof
-
-        Abs(Var w, Term c)) {
+        if (s instanceof Abs(Var v, Term b) && t instanceof Abs(Var w, Term c)) {
             if (!v.t().equals(w.t()))
                 return false;
             e.push(new Pair(v, w));
@@ -202,13 +190,9 @@ public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
         return switch (t) {
             case Var v -> theta.getOrDefault(v, v);
             case Const c -> c;
-            case
-
-                    Comb(Term f, Term x) ->
+            case Comb(Term f, Term x) ->
                 new Comb(vsub(theta, f), vsub(theta, x));
-            case
-
-                    Abs(Var v, Term b) -> {
+            case Abs(Var v, Term b) -> {
                 Map<Var, Term> sigma = new HashMap<>();
                 Set<Var> vs = frees(b);
                 for (Map.Entry<Var, Term> e : theta.entrySet())
@@ -236,13 +220,9 @@ public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
         return switch (t) {
             case Var v -> new Var(v.n(), Type.subst(theta, v.t()));
             case Const c -> new Const(c.n(), Type.subst(theta, c.t()));
-            case
-
-                    Comb(Term f, Term x) ->
+            case Comb(Term f, Term x) ->
                 new Comb(inst(theta, f), inst(theta, x));
-            case
-
-                    Abs(Var v, Term b) -> {
+            case Abs(Var v, Term b) -> {
                 Set<Var> vs = frees(b);
                 Var w = new Var(v.n(), Type.subst(theta, v.t()));
                 boolean clash = false;
@@ -252,7 +232,6 @@ public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
                 if (!clash)
                     yield new Abs(w, inst(theta, b));
                 w = variant(vs, v);
-
                 yield inst(theta, new Abs(w, vsubst(Map.of(v, w), b)));
             }
         };
@@ -274,9 +253,7 @@ public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
                 else
                     sb.append('(').append(c.n()).append(')');
             }
-            case Comb c
-
-            when isEq(c) -> {
+            case Comb c when isEq(c) -> {
                 Eq e = destEq(c);
                 if (p > 0)
                     sb.append('(');
@@ -286,9 +263,7 @@ public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
                 if (p > 0)
                     sb.append(')');
             }
-            case
-
-                    Comb(Term f, Term x) -> {
+            case Comb(Term f, Term x) -> {
                 if (p > 1)
                     sb.append('(');
                 show(f, 1, sb);
@@ -297,9 +272,7 @@ public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
                 if (p > 1)
                     sb.append(')');
             }
-            case
-
-                    Abs(Var v, Term b) -> {
+            case Abs(Var v, Term b) -> {
                 if (p > 0)
                     sb.append('(');
                 sb.append('\\').append(v.n()).append(':').append(v.t()).append(". ");
