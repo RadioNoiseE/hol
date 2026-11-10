@@ -46,6 +46,7 @@ Reserved Names:
 f, x         -> function and argument of an application, f(x)
 i, j         -> a loop index
 s, t, u      -> a term
+th           -> a theorem
 theta, sigma -> a substitution
 
 
@@ -116,6 +117,8 @@ hyps()             -> hyps for hypothesis
 concl()            -> concl for conclusion
 toString()         -> toString for to string, sb for string builder (2c);
                       i (4a)
+axioms             -> axioms for axioms
+newAxiom(t)        -> newAxiom for new axiom, t for term (2a); th (4a)
 contains(ts, s)    -> contains for contains, ts for terms (2a, 6), s for term
                       (2a); t (4a)
 union(ss, ts)      -> union for union, ss for terms, ts for terms (2a, 6);
@@ -139,6 +142,8 @@ inst(theta, t)     -> inst for instantiate, theta as reserved (2a), t for
                       theorem (2c); hs (4c, 4d), h (4d)
 instType(theta, t) -> inst for instantiate type, theta as reserved (2a), t for
                       theorem (2c); hs (4c, 4d), h (4d)
+newBasicDef(t)     -> newBasicDef for new basic definition, t for term (2c);
+                      e (4e)
 
 
 Sig.java:

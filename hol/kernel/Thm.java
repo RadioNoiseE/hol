@@ -35,6 +35,20 @@ public final class Thm {
         return sb.toString();
     }
 
+    private static final List<Thm> axioms = new ArrayList<>();
+
+    public static Thm newAxiom(Term t) {
+        if (!Term.typeOf(t).equals(Type.BOOL))
+            throw new HolException("newAxiom: not a proposition: " + t);
+        Thm th = new Thm(List.of(), t);
+        axioms.add(th);
+        return th;
+    }
+
+    public static List<Thm> axioms() {
+        return List.copyOf(axioms);
+    }
+
     private static boolean contains(List<Term> ts, Term s) {
         for (Term t : ts)
             if (Term.aconv(t, s))
@@ -134,5 +148,18 @@ public final class Thm {
         for (Term h : t.hyps)
             hs.add(Term.inst(theta, h));
         return new Thm(union(List.of(), hs), Term.inst(theta, t.concl));
+    }
+
+    // NEW_BASIC_DEF: c = t ==> |- c = t
+    public static Thm newBasicDef(Term t) {
+        Term.Eq e = Term.destEq(t);
+        if (!(e.l() instanceof Term.Var v))
+            throw new HolException("newBasicDef: the left side is not a variable: " + e.l());
+        if (!Term.frees(e.r()).isEmpty())
+            throw new HolException("newBasicDef: the right side has free variables " + Term.frees(e.r()));
+        if (!Type.tyvars(v.t()).containsAll(Term.tyvars(e.r())))
+            throw new HolException("newBasicDef: type variables of " + e.r() + " do not all occur in the type of " + v);
+        Sig.newConst(v.n(), v.t());
+        return new Thm(List.of(), Term.mkEq(new Term.Const(v.n(), v.t()), e.r()));
     }
 }
