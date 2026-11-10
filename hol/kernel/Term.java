@@ -1,4 +1,4 @@
-package hol;
+package hol.kernel;
 
 import java.util.ArrayDeque;
 import java.util.Deque;

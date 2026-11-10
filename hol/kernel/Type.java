@@ -1,4 +1,4 @@
-package hol;
+package hol.kernel;
 
 import java.util.ArrayList;
 import java.util.HashMap;

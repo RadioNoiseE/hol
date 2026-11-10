@@ -1,5 +1,6 @@
-package hol;
+package hol.test;
 
+import hol.kernel.*;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
