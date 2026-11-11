@@ -16,6 +16,28 @@ public final class Equal {
         return Thm.inst(Map.of(v, x), Thm.beta(t1));
     }
 
+    // BETA_NORM: |- t = t'
+    public static Thm betaNorm(Term t) {
+        return switch (t) {
+            case Term.Var v -> Thm.refl(v);
+            case Term.Const c -> Thm.refl(c);
+            case Term.Abs(Term.Var v, Term b) -> Thm.abs(v, betaNorm(b));
+            case Term.Comb(Term f, Term x) -> {
+                Thm t1 = Thm.mkComb(betaNorm(f), betaNorm(x)); // |- f x = f' x'
+                Term r = Term.destEq(t1.concl()).r();
+                if (!(r instanceof Term.Comb(Term.Abs _, Term _)))
+                    yield t1;
+                Thm t2 = Thm.trans(t1, betaConv(r)); // |- f x = f'' x''
+                yield Thm.trans(t2, betaNorm(Term.destEq(t2.concl()).r()));
+            }
+        };
+    }
+
+    // BETA_RULE: A |- t ==> A |- t'
+    public static Thm betaRule(Thm t) {
+        return Thm.eqMp(betaNorm(t.concl()), t);
+    }
+
     // AP_TERM: f, A |- x = y ==> A |- fx = fy
     public static Thm apTerm(Term f, Thm t) {
         return Thm.mkComb(Thm.refl(f), t);
