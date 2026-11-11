@@ -23,7 +23,7 @@ public final class Check {
 
     public static void section(String name, Runnable checks) {
         System.out.println();
-        System.out.printf(LINE, "==", name);
+        System.out.printf(LINE, "****", name);
         checks.run();
     }
 
