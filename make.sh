@@ -7,3 +7,4 @@ rm -rf out
 
 javac -d out hol/kernel/*.java hol/lib/*.java hol/test/*.java
 java -cp out hol.test.Tests
+java -cp out hol.test.Props
