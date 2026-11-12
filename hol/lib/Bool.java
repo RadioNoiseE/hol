@@ -132,4 +132,88 @@ public final class Bool {
         Thm t1 = Thm.dar(t, Thm.inst(Map.of(P, c.l(), Q, c.r()), CONJUNCT2_PTH)); // A - {q} |- (p /\ q) = q
         return Thm.eqMp(t1, t);
     }
+
+    // IMP_DEF: |- (==>) = \p q. (p /\ q) = p
+    public static final Thm IMP_DEF = Thm
+            .newBasicDef(Term.mkEq(new Term.Var("==>", BINOP), lam(P, lam(Q, Term.mkEq(mkConj(P, Q), P)))));
+
+    public static final Term IMP = new Term.Const("==>", BINOP);
+
+    public record Imp(Term l, Term r) {
+        // the antecedent and consequent of an implication
+    }
+
+    public static Term mkImp(Term l, Term r) {
+        return app(IMP, l, r);
+    }
+
+    public static boolean isImp(Term t) {
+        return t instanceof Term.Comb(Term.Comb(Term.Const c, Term _), Term _) && c.n().equals("==>");
+    }
+
+    public static Imp destImp(Term t) {
+        if (t instanceof Term.Comb(Term.Comb(Term.Const c, Term l), Term r) && c.n().equals("==>"))
+            return new Imp(l, r);
+        throw new HolException("destImp: not an implication: " + t);
+    }
+
+    // IMP_PQ: |- (p ==> q) = ((p /\ q) = p)
+    private static final Thm IMP_PQ = Equal.betaRule(Equal.apThm(Equal.apThm(IMP_DEF, P), Q));
+
+    // MP_PTH: p |- (p ==> q) = q
+    private static final Thm MP_PTH = mpPth();
+
+    private static Thm mpPth() {
+        Thm t1 = conj(Thm.assume(P), Thm.assume(Q)); // p, q |- p /\ q
+        Thm t2 = conjunct1(Thm.assume(mkConj(P, Q))); // p /\ q |- p
+        Thm t3 = Thm.eqMp(Equal.sym(IMP_PQ), Thm.dar(t1, t2)); // q |- p ==> q
+        Thm t4 = Thm.eqMp(IMP_PQ, Thm.assume(mkImp(P, Q))); // p ==> q |- (p /\ q) = p
+        Thm t5 = conjunct2(Thm.eqMp(Equal.sym(t4), Thm.assume(P))); // p ==> q, p |- q
+        return Thm.dar(t3, t5);
+    }
+
+    // MP: A |- p ==> q, B |- p ==> A \/ B |- q
+    public static Thm mp(Thm t1, Thm t2) {
+        Imp i = destImp(t1.concl());
+        if (!Term.aconv(i.l(), t2.concl()))
+            throw new HolException("mp: theorems do not agree: " + t1 + " and " + t2);
+        Thm t = Thm.dar(t2, Thm.inst(Map.of(P, i.l(), Q, i.r()), MP_PTH)); // B - {...} |- p = ((p ==> q) = q)
+        return Thm.eqMp(Thm.eqMp(t, t2), t1);
+    }
+
+    // DISCH_PTH: |- ((p /\ q) = p) = (p ==> q)
+    private static final Thm DISCH_PTH = Equal.sym(IMP_PQ);
+
+    // DISCH: p, A |- q ==> A - {p} |- p ==> q
+    public static Thm disch(Term p, Thm t) {
+        Thm t1 = conj(Thm.assume(p), t); // A \/ {p} |- p /\ q
+        Thm t2 = conjunct1(Thm.assume(t1.concl())); // p /\ q |- p
+        Thm t3 = Thm.dar(t1, t2); // A - {p} |- (p /\ q) = p
+        Thm t4 = Thm.inst(Map.of(P, p, Q, t.concl()), DISCH_PTH); // |- ((p /\ q) = p) = (p ==> q)
+        return Thm.eqMp(t4, t3);
+    }
+
+    // DISCH_ALL: p1, ..., pn |- q ==> |- p1 ==> ... ==> pn ==> q
+    public static Thm dischAll(Thm t) {
+        while (!t.hyps().isEmpty())
+            t = disch(t.hyps().get(0), t);
+        return t;
+    }
+
+    // UNDISCH: A |- p ==> q ==> A, p |- q
+    public static Thm undisch(Thm t) {
+        return mp(t, Thm.assume(destImp(t.concl()).l()));
+    }
+
+    // UNDISCH_ALL: A |- p1 ==> ... ==> pn ==> q ==> A, p1, ..., pn |- q
+    public static Thm undischAll(Thm t) {
+        while (isImp(t.concl()))
+            t = undisch(t);
+        return t;
+    }
+
+    // ADD_ASSUM: A |- q ==> A, p |- q
+    public static Thm addAssum(Term p, Thm t) {
+        return mp(disch(p, t), Thm.assume(p));
+    }
 }
