@@ -32,6 +32,7 @@ public class Tests {
         Check.section("axioms", Tests::axiomTests);
         Check.section("definitions", Tests::defTests);
         Check.section("Equal", Tests::equalTests);
+        Check.section("Bool", Tests::boolTests);
         Check.report();
     }
 
@@ -390,5 +391,26 @@ public class Tests {
         prints("f = f' |- f x = f' x", Equal.apThm(Thm.assume(eq(f, f1)), x));
         Check.checkThrow("sym needs an equation", () -> Equal.sym(Thm.assume(p)));
         Check.checkThrow("betaConv needs a redex", () -> Equal.betaConv(app(f, x)));
+    }
+
+    static void boolTests() {
+        prints("|- T = ((\\p:bool. p) = (\\p:bool. p))", Bool.T_DEF);
+        prints("|- T", Bool.TRUTH);
+        prints("p |- p = T", Bool.eqtIntro(Thm.assume(p)));
+        prints("T |- T = T", Bool.eqtIntro(Thm.assume(Bool.T))); // the hypothesis T is kept
+        prints("p = T |- p", Bool.eqtElim(Thm.assume(eq(p, Bool.T))));
+        Check.checkThrow("eqtElim needs an equation with T", () -> Bool.eqtElim(Thm.assume(eq(p, q))));
+        prints("|- T", Bool.proveHyp(Bool.TRUTH, Thm.assume(Bool.T)));
+        prints("q = q |- q = q", Bool.proveHyp(Thm.assume(p), Thm.assume(eq(q, q)))); // nothing to discharge
+
+        prints("|- (/\\) T T", Bool.conj(Bool.TRUTH, Bool.TRUTH));
+        prints("p, q |- (/\\) p q", Bool.conj(Thm.assume(p), Thm.assume(q)));
+        prints("(/\\) p q |- p", Bool.conjunct1(Thm.assume(Bool.mkConj(p, q))));
+        prints("(/\\) p q |- q", Bool.conjunct2(Thm.assume(Bool.mkConj(p, q))));
+        prints("p, q |- q", Bool.conjunct2(Bool.conj(Thm.assume(p), Thm.assume(q))));
+        prints("x = y |- x = y", Bool.conjunct1(Bool.conj(Thm.assume(eq(x, y)), Bool.TRUTH)));
+        prints("x = y, p |- (/\\) (x = y) p", Bool.conj(Thm.assume(eq(x, y)), Thm.assume(p)));
+        prints("p |- (/\\) p p", Bool.conj(Thm.assume(p), Thm.assume(p))); // shared hypothesis kept once
+        Check.checkThrow("conjunct1 needs a conjunction", () -> Bool.conjunct1(Thm.assume(p)));
     }
 }
