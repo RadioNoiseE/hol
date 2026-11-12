@@ -33,6 +33,7 @@ public class Tests {
         Check.section("definitions", Tests::defTests);
         Check.section("Equal", Tests::equalTests);
         Check.section("Bool", Tests::boolTests);
+        Check.section("implication", Tests::impTests);
         Check.report();
     }
 
@@ -412,5 +413,26 @@ public class Tests {
         prints("x = y, p |- (/\\) (x = y) p", Bool.conj(Thm.assume(eq(x, y)), Thm.assume(p)));
         prints("p |- (/\\) p p", Bool.conj(Thm.assume(p), Thm.assume(p))); // shared hypothesis kept once
         Check.checkThrow("conjunct1 needs a conjunction", () -> Bool.conjunct1(Thm.assume(p)));
+    }
+
+    static void impTests() {
+        prints("|- (==>) = (\\p:bool. \\q:bool. (/\\) p q = p)", Bool.IMP_DEF);
+
+        prints("p, (==>) p q |- q", Bool.mp(Thm.assume(Bool.mkImp(p, q)), Thm.assume(p)));
+        Check.checkThrow("mp: the antecedent must match",
+                () -> Bool.mp(Thm.assume(Bool.mkImp(p, q)), Thm.assume(q)));
+        Check.checkThrow("mp needs an implication", () -> Bool.mp(Thm.assume(p), Thm.assume(p)));
+
+        prints("|- (==>) p p", Bool.disch(p, Thm.assume(p)));
+        prints("q |- (==>) p q", Bool.disch(p, Thm.assume(q))); // p was not a hypothesis
+        prints("q |- (==>) p ((/\\) p q)", Bool.disch(p, Bool.conj(Thm.assume(p), Thm.assume(q))));
+        Check.checkThrow("disch needs a proposition", () -> Bool.disch(x, Thm.assume(p)));
+
+        prints("p, (==>) p q |- q", Bool.undisch(Thm.assume(Bool.mkImp(p, q))));
+        Check.checkThrow("undisch needs an implication", () -> Bool.undisch(Thm.assume(p)));
+
+        prints("|- (==>) q ((==>) p ((/\\) p q))", Bool.dischAll(Bool.conj(Thm.assume(p), Thm.assume(q))));
+        prints("p, q |- (/\\) p q", Bool.undischAll(Bool.dischAll(Bool.conj(Thm.assume(p), Thm.assume(q)))));
+        prints("p |- x = x", Bool.addAssum(p, Thm.refl(x)));
     }
 }
