@@ -288,7 +288,7 @@ public final class Bool {
         Thm t1 = Thm.abs(x, eqtIntro(t)); // A |- (\x. t) = (\x. T)
         Term m = Term.destEq(t1.concl()).l(); // \x. t
         Thm t2 = Thm.instType(Map.of(A, x.t()), GEN_PTH); // |- (s = (\x. T)) = !s
-        Thm t3 = Thm.inst(Map.of(rty(S, x.t()), m), t2); // |- (\x. t = (\x. T)) = !x. t
+        Thm t3 = Thm.inst(Map.of(rty(S, x.t()), m), t2); // |- ((\x. t) = (\x. T)) = !x. t
         return Thm.eqMp(t3, t1);
     }
 }
