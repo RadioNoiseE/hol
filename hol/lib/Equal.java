@@ -38,7 +38,7 @@ public final class Equal {
         return Thm.eqMp(betaNorm(t.concl()), t);
     }
 
-    // AP_TERM: f, A |- x = y ==> A |- fx = fy
+    // AP_TERM: f, A |- x = y ==> A |- f x = f y
     public static Thm apTerm(Term f, Thm t) {
         return Thm.mkComb(Thm.refl(f), t);
     }
