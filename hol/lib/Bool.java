@@ -8,12 +8,17 @@ public final class Bool {
         // cannot be instantiated
     }
 
+    private static final Type.Var A = Type.var("a");
+
     private static final Type BOOL = Type.BOOL;
+    private static final Type PRED = Type.fun(A, BOOL);
     private static final Type BINOP = Type.fun(BOOL, Type.fun(BOOL, BOOL));
 
     private static final Term.Var P = new Term.Var("p", BOOL);
     private static final Term.Var Q = new Term.Var("q", BOOL);
     private static final Term.Var F = new Term.Var("f", BINOP);
+    private static final Term.Var X = new Term.Var("x", A);
+    private static final Term.Var S = new Term.Var("s", PRED);
 
     private static Term app(Term f, Term... xs) {
         Term t = f;
@@ -24,6 +29,10 @@ public final class Bool {
 
     private static Term lam(Term.Var v, Term b) {
         return new Term.Abs(v, b);
+    }
+
+    private static Term.Var rty(Term.Var v, Type t) {
+        return new Term.Var(v.n(), Type.subst(Map.of(A, t), v.t()));
     }
 
     // PROVE_HYP: A |- p, B |- q ==> A \/ (B - {p}) |- q
@@ -215,5 +224,71 @@ public final class Bool {
     // ADD_ASSUM: A |- q ==> A, p |- q
     public static Thm addAssum(Term p, Thm t) {
         return mp(disch(p, t), Thm.assume(p));
+    }
+
+    // FORALL_DEF: |- (!) = \s. s = (\x. T)
+    public static final Thm FORALL_DEF = Thm
+            .newBasicDef(Term.mkEq(new Term.Var("!", Type.fun(PRED, BOOL)), lam(S, Term.mkEq(S, lam(X, T)))));
+
+    private static Term forall(Type t) {
+        return new Term.Const("!", Type.fun(Type.fun(t, BOOL), BOOL));
+    }
+
+    public record Forall(Term.Var v, Term b) {
+        // the binding variable and the body
+    }
+
+    public static Term mkForall(Term.Var v, Term b) {
+        return app(forall(v.t()), lam(v, b));
+    }
+
+    public static boolean isForall(Term t) {
+        return t instanceof Term.Comb(Term.Const c, Term.Abs(Term.Var _, Term _)) && c.n().equals("!");
+    }
+
+    public static Forall destForall(Term t) {
+        if (t instanceof Term.Comb(Term.Const c, Term.Abs(Term.Var v, Term b)) && c.n().equals("!"))
+            return new Forall(v, b);
+        throw new HolException("destForall: not a universal quantification: " + t);
+    }
+
+    // SPEC_PTH: !s |- s x
+    private static final Thm SPEC_PTH = specPth();
+
+    private static Thm specPth() {
+        Thm t1 = Equal.apThm(FORALL_DEF, S); // |- !s = (\s. s = (\x. T)) s
+        Thm t2 = Thm.eqMp(t1, Thm.assume(app(forall(A), S))); // !s |- (\s. s = (\x. T)) s
+        Thm t3 = Equal.betaRule(Equal.apThm(Equal.betaRule(t2), X)); // !s |- s x = T
+        return eqtElim(t3);
+    }
+
+    // SPEC: A |- !x. t ==> A |- t[s/x]
+    public static Thm spec(Term s, Thm t) {
+        Forall f = destForall(t.concl());
+        Type y = f.v().t();
+        if (!Term.typeOf(s).equals(y))
+            throw new HolException("spec: type mismatch: " + s + " for " + f.v());
+        Thm t1 = Thm.instType(Map.of(A, y), SPEC_PTH); // !s |- s x
+        Thm t2 = Thm.inst(Map.of(rty(S, y), lam(f.v(), f.b()), rty(X, y), s), t1); // !x. t |- (\x. t) s
+        Thm t3 = proveHyp(t, t2); // A |- (\x. t) s
+        Thm t4 = Equal.betaConv(t3.concl()); // |- (\x. t) s = t[s/x]
+        return Thm.eqMp(t4, t3);
+    }
+
+    // GEN_PTH: |- (s = (\x. T)) = !s
+    private static final Thm GEN_PTH = genPth();
+
+    private static Thm genPth() {
+        Thm t1 = Equal.apThm(FORALL_DEF, S); // |- !s = (\s. s = (\x. T)) s
+        return Equal.sym(Equal.betaRule(t1));
+    }
+
+    // GEN: A |- t ==> A |- !x. t
+    public static Thm gen(Term.Var x, Thm t) {
+        Thm t1 = Thm.abs(x, eqtIntro(t)); // A |- (\x. t) = (\x. T)
+        Term m = Term.destEq(t1.concl()).l(); // \x. t
+        Thm t2 = Thm.instType(Map.of(A, x.t()), GEN_PTH); // |- (s = (\x. T)) = !s
+        Thm t3 = Thm.inst(Map.of(rty(S, x.t()), m), t2); // |- (\x. t = (\x. T)) = !x. t
+        return Thm.eqMp(t3, t1);
     }
 }
