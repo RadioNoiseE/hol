@@ -32,7 +32,8 @@ public class Tests {
         Check.section("axioms", Tests::axiomTests);
         Check.section("definitions", Tests::defTests);
         Check.section("Equal", Tests::equalTests);
-        Check.section("Bool", Tests::boolTests);
+        Check.section("forall", Tests::forallTests);
+        Check.section("bool", Tests::boolTests);
         Check.section("implication", Tests::impTests);
         Check.report();
     }
@@ -394,6 +395,22 @@ public class Tests {
         Check.checkThrow("betaConv needs a redex", () -> Equal.betaConv(app(f, x)));
     }
 
+    static void forallTests() {
+        prints("|- (!) = (\\s:'a -> bool. s = (\\x:'a. T))", Bool.FORALL_DEF);
+        Thm g = Bool.gen(x, Thm.refl(x));
+        prints("|- (!) (\\x:'a. x = x)", g);
+        prints("|- y = y", Bool.spec(y, g));
+        prints("|- (\\x:'a. x) y = (\\x:'a. x) y", Bool.spec(new Term.Comb(lam(x, x), y), g)); // only the top redex
+        prints("q |- (!) (\\p:bool. q)", Bool.gen(p, Thm.assume(q)));
+        prints("|- (!) (\\y:'a. (!) (\\x:'a. f x = f x))", Bool.gen(y, Bool.gen(x, Thm.refl(new Term.Comb(f, x)))));
+        Thm c = Bool.gen(y, Bool.gen(x, Bool.disch(eq(x, y), Thm.assume(eq(x, y)))));
+        prints("|- (!) (\\y:'a. (!) (\\x:'a. (==>) (x = y) (x = y)))", c);
+        prints("|- (!) (\\x':'a. (==>) (x' = x) (x' = x))", Bool.spec(x, c)); // capture avoided
+        Check.checkThrow("gen: variable free in hypotheses", () -> Bool.gen(p, Thm.assume(p)));
+        Check.checkThrow("spec: wrong type", () -> Bool.spec(p, g));
+        Check.checkThrow("spec needs a universal", () -> Bool.spec(p, Thm.assume(p)));
+    }
+
     static void boolTests() {
         prints("|- T = ((\\p:bool. p) = (\\p:bool. p))", Bool.T_DEF);
         prints("|- T", Bool.TRUTH);
@@ -424,6 +441,7 @@ public class Tests {
         Check.checkThrow("mp needs an implication", () -> Bool.mp(Thm.assume(p), Thm.assume(p)));
 
         prints("|- (==>) p p", Bool.disch(p, Thm.assume(p)));
+        prints("|- (==>) q q", Bool.spec(q, Bool.gen(p, Bool.disch(p, Thm.assume(p)))));
         prints("q |- (==>) p q", Bool.disch(p, Thm.assume(q))); // p was not a hypothesis
         prints("q |- (==>) p ((/\\) p q)", Bool.disch(p, Bool.conj(Thm.assume(p), Thm.assume(q))));
         Check.checkThrow("disch needs a proposition", () -> Bool.disch(x, Thm.assume(p)));
