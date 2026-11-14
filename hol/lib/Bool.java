@@ -98,12 +98,7 @@ public final class Bool {
     }
 
     // AND_PQ: |- p /\ q = ((\f. f p q) = \f. f T T)
-    private static final Thm AND_PQ = andPq();
-
-    private static Thm andPq() {
-        Thm t = Equal.apThm(Equal.apThm(AND_DEF, P), Q); // |- p /\ q = (\p q. (\f. f p q) = \f. f T T) p q
-        return Thm.trans(t, Equal.betaNorm(Term.destEq(t.concl()).r()));
-    }
+    private static final Thm AND_PQ = Equal.betaRule(Equal.apThm(Equal.apThm(AND_DEF, P), Q));
 
     // CONJUNCT1_PTH: p /\ q |- p
     // CONJUNCT2_PTH: p /\ q |- q
@@ -395,4 +390,7 @@ public final class Bool {
             return new Disj(l, r);
         throw new HolException("destDisj: not a disjunction: " + t);
     }
+
+    // OR_PQ: |- p \/ q = !r (p ==> r) ==> (q ==> r) ==> r
+    private static final Thm OR_PQ = Equal.betaRule(Equal.apThm(Equal.apThm(OR_DEF, P), Q));
 }
