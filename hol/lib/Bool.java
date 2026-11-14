@@ -35,7 +35,7 @@ public final class Bool {
         return new Term.Var(v.n(), Type.subst(Map.of(A, t), v.t()));
     }
 
-    // PROVE_HYP: A |- p, B |- q ==> A \/ (B - {p}) |- q
+    // PROVE_HYP: A |- p, B |- q ==> A + (B - {p}) |- q
     public static Thm proveHyp(Thm t1, Thm t2) {
         // if p is not in B, yield just B |- q
         if (t2.hyps().stream().noneMatch(h -> Term.aconv(h, t1.concl())))
@@ -92,11 +92,11 @@ public final class Bool {
         throw new HolException("destConj: not a conjunction: " + t);
     }
 
-    // AND_PQ: |- p /\ q = ((\f. f p q) = (\f. f T T))
+    // AND_PQ: |- p /\ q = ((\f. f p q) = \f. f T T)
     private static final Thm AND_PQ = andPq();
 
     private static Thm andPq() {
-        Thm t = Equal.apThm(Equal.apThm(AND_DEF, P), Q); // |- p /\ q = (\p q. (\f. f p q) = (\f. f T T)) p q
+        Thm t = Equal.apThm(Equal.apThm(AND_DEF, P), Q); // |- p /\ q = (\p q. (\f. f p q) = \f. f T T) p q
         return Thm.trans(t, Equal.betaNorm(Term.destEq(t.concl()).r()));
     }
 
@@ -106,7 +106,7 @@ public final class Bool {
     private static final Thm CONJUNCT2_PTH = conjunctPth(lam(P, lam(Q, Q)));
 
     private static Thm conjunctPth(Term s) {
-        Thm t1 = Thm.eqMp(AND_PQ, Thm.assume(mkConj(P, Q))); // p /\ q |- (\f. f p q) = (\f. f T T)
+        Thm t1 = Thm.eqMp(AND_PQ, Thm.assume(mkConj(P, Q))); // p /\ q |- (\f. f p q) = \f. f T T
         Thm t2 = Equal.betaRule(Equal.apThm(t1, s)); // p /\ q |- (s) p q = (s) T T
         return eqtElim(t2);
     }
@@ -116,12 +116,12 @@ public final class Bool {
 
     private static Thm conjPth() {
         Thm t1 = Thm.mkComb(Equal.apTerm(F, eqtIntro(Thm.assume(P))), eqtIntro(Thm.assume(Q))); // p, q |- f p q = f T T
-        Thm t2 = Thm.abs(F, t1); // p, q |- (\f. f p q) = (\f. f T T)
+        Thm t2 = Thm.abs(F, t1); // p, q |- (\f. f p q) = \f. f T T
         Thm t3 = Thm.eqMp(Equal.sym(AND_PQ), t2); // p, q |- p /\ q
         return Thm.dar(CONJUNCT2_PTH, t3);
     }
 
-    // CONJ: A |- p, B |- q ==> A \/ B |- p /\ q
+    // CONJ: A |- p, B |- q ==> A + B |- p /\ q
     public static Thm conj(Thm t1, Thm t2) {
         Thm t3 = Thm.inst(Map.of(P, t1.concl(), Q, t2.concl()), CONJ_PTH); // p |- q = (p /\ q)
         Thm t4 = Thm.dar(t1, t3); // A - {q = (p /\ q)} |- p = (q = (p /\ q))
@@ -181,12 +181,12 @@ public final class Bool {
         return Thm.dar(t3, t5);
     }
 
-    // MP: A |- p ==> q, B |- p ==> A \/ B |- q
+    // MP: A |- p ==> q, B |- p ==> A + B |- q
     public static Thm mp(Thm t1, Thm t2) {
         Imp i = destImp(t1.concl());
         if (!Term.aconv(i.l(), t2.concl()))
             throw new HolException("mp: theorems do not agree: " + t1 + " and " + t2);
-        Thm t = Thm.dar(t2, Thm.inst(Map.of(P, i.l(), Q, i.r()), MP_PTH)); // B - {...} |- p = ((p ==> q) = q)
+        Thm t = Thm.dar(t2, Thm.inst(Map.of(P, i.l(), Q, i.r()), MP_PTH)); // B - {(p ==> q) = q} |- p = ((p ==> q) = q)
         return Thm.eqMp(Thm.eqMp(t, t2), t1);
     }
 
@@ -195,7 +195,7 @@ public final class Bool {
 
     // DISCH: p, A |- q ==> A - {p} |- p ==> q
     public static Thm disch(Term p, Thm t) {
-        Thm t1 = conj(Thm.assume(p), t); // A \/ {p} |- p /\ q
+        Thm t1 = conj(Thm.assume(p), t); // A + {p} |- p /\ q
         Thm t2 = conjunct1(Thm.assume(t1.concl())); // p /\ q |- p
         Thm t3 = Thm.dar(t1, t2); // A - {p} |- (p /\ q) = p
         Thm t4 = Thm.inst(Map.of(P, p, Q, t.concl()), DISCH_PTH); // |- ((p /\ q) = p) = (p ==> q)
@@ -352,7 +352,7 @@ public final class Bool {
         return dischAll(disch(e, undisch(t)));
     }
 
-    // A |- ?x. t, B \/ {t[v/x]} |- u ==> A \/ B |- u
+    // A |- ?x. t, B + {t[v/x]} |- u ==> A + B |- u
     public static Thm choose(Term.Var v, Thm t1, Thm t2) {
         Exists x = destExists(t1.concl());
         Type y = x.v().t();
