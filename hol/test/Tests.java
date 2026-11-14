@@ -36,6 +36,7 @@ public class Tests {
         Check.section("exists", Tests::equalTests);
         Check.section("bool", Tests::boolTests);
         Check.section("implication", Tests::impTests);
+        Check.section("disjunction", Tests::disjTests);
         Check.report();
     }
 
@@ -471,5 +472,20 @@ public class Tests {
         prints("|- (==>) q ((==>) p ((/\\) p q))", Bool.dischAll(Bool.conj(Thm.assume(p), Thm.assume(q))));
         prints("p, q |- (/\\) p q", Bool.undischAll(Bool.dischAll(Bool.conj(Thm.assume(p), Thm.assume(q)))));
         prints("p |- x = x", Bool.addAssum(p, Thm.refl(x)));
+    }
+
+    static void disjTests() {
+        prints("|- (\\/) = (\\p:bool. \\q:bool. (!) (\\r:bool. (==>) ((==>) p r) ((==>) ((==>) q r) r)))", Bool.OR_DEF);
+        prints("p |- (\\/) p q", Bool.disj1(Thm.assume(p), q));
+        prints("q |- (\\/) p q", Bool.disj2(p, Thm.assume(q)));
+        prints("|- (\\/) (x = x) p", Bool.disj1(Thm.refl(x), p));
+        Thm a = Thm.assume(Bool.mkDisj(p, q));
+        prints("(\\/) p q |- (\\/) q p", Bool.disjCases(a, Bool.disj2(q, Thm.assume(p)), Bool.disj1(Thm.assume(q), p))); // commutativity
+        prints("(\\/) p p |- p", Bool.disjCases(Thm.assume(Bool.mkDisj(p, p)), Thm.assume(p), Thm.assume(p)));
+        prints("(\\/) p q, z |- z", Bool.disjCases(a, Thm.assume(zBool), Thm.assume(zBool))); // cases unused
+        Check.checkThrow("disjCases: conclusions must agree", () -> Bool.disjCases(a, Thm.assume(p), Thm.assume(q)));
+        Check.checkThrow("disjCases needs a disjunction",
+                () -> Bool.disjCases(Thm.assume(p), Thm.assume(p), Thm.assume(p)));
+        Check.checkThrow("disj1: the disjunct must be a proposition", () -> Bool.disj1(Thm.assume(p), x));
     }
 }
