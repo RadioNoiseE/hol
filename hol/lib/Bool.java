@@ -16,6 +16,7 @@ public final class Bool {
 
     private static final Term.Var P = new Term.Var("p", BOOL);
     private static final Term.Var Q = new Term.Var("q", BOOL);
+    private static final Term.Var R = new Term.Var("r", BOOL);
     private static final Term.Var F = new Term.Var("f", BINOP);
     private static final Term.Var X = new Term.Var("x", A);
     private static final Term.Var S = new Term.Var("s", PRED);
@@ -84,6 +85,10 @@ public final class Bool {
 
     public static Term mkConj(Term l, Term r) {
         return app(AND, l, r);
+    }
+
+    public static boolean isConj(Term t) {
+        return t instanceof Term.Comb(Term.Comb(Term.Const c, Term _), Term _) && c.n().equals("/\\");
     }
 
     public static Conj destConj(Term t) {
@@ -352,7 +357,7 @@ public final class Bool {
         return dischAll(disch(e, undisch(t)));
     }
 
-    // A |- ?x. t, B + {t[v/x]} |- u ==> A + B |- u
+    // CHOOSE: A |- ?x. t, B + {t[v/x]} |- u ==> A + B |- u
     public static Thm choose(Term.Var v, Thm t1, Thm t2) {
         Exists x = destExists(t1.concl());
         Type y = x.v().t();
@@ -364,5 +369,30 @@ public final class Bool {
         Thm t5 = Thm.instType(Map.of(A, y), CHOOSE_PTH); // |- (!x. s x ==> q) ==> (?s ==> q)
         Thm t6 = Thm.inst(Map.of(rty(S, y), m, Q, t2.concl()), t5); // |- (!x. (\x. t) x ==> u) ==> (?x. t ==> u)
         return mp(mp(t6, t4), t1);
+    }
+
+    // OR_DEF: |- (\/) = \p q. !r (p ==> r) ==> (q ==> r) ==> r
+    public static final Thm OR_DEF = Thm
+            .newBasicDef(Term.mkEq(new Term.Var("\\/", BINOP),
+                    lam(P, lam(Q, mkExists(R, mkImp(mkImp(P, R), mkImp(mkImp(Q, R), R)))))));
+
+    public static final Term OR = new Term.Const("/\\", BINOP);
+
+    public record Disj(Term l, Term r) {
+        // the two sides of a disjunction
+    }
+
+    public static Term mkDisj(Term l, Term r) {
+        return app(OR, l, r);
+    }
+
+    public static boolean isDisj(Term t) {
+        return t instanceof Term.Comb(Term.Comb(Term.Const c, Term _), Term _) && c.n().equals("\\/");
+    }
+
+    public static Disj destDisj(Term t) {
+        if (t instanceof Term.Comb(Term.Comb(Term.Const c, Term l), Term r) && c.n().equals("\\/"))
+            return new Disj(l, r);
+        throw new HolException("destDisj: not a disjunction: " + t);
     }
 }
