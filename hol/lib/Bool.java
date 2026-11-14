@@ -226,7 +226,7 @@ public final class Bool {
         return mp(disch(p, t), Thm.assume(p));
     }
 
-    // FORALL_DEF: |- (!) = \s. s = (\x. T)
+    // FORALL_DEF: |- (!) = \s. s = \x. T
     public static final Thm FORALL_DEF = Thm
             .newBasicDef(Term.mkEq(new Term.Var("!", Type.fun(PRED, BOOL)), lam(S, Term.mkEq(S, lam(X, T)))));
 
@@ -256,8 +256,8 @@ public final class Bool {
     private static final Thm SPEC_PTH = specPth();
 
     private static Thm specPth() {
-        Thm t1 = Equal.apThm(FORALL_DEF, S); // |- !s = (\s. s = (\x. T)) s
-        Thm t2 = Thm.eqMp(t1, Thm.assume(app(forall(A), S))); // !s |- (\s. s = (\x. T)) s
+        Thm t1 = Equal.apThm(FORALL_DEF, S); // |- !s = (\s. s = \x. T) s
+        Thm t2 = Thm.eqMp(t1, Thm.assume(app(forall(A), S))); // !s |- (\s. s = \x. T) s
         Thm t3 = Equal.betaRule(Equal.apThm(Equal.betaRule(t2), X)); // !s |- s x = T
         return eqtElim(t3);
     }
@@ -279,16 +279,90 @@ public final class Bool {
     private static final Thm GEN_PTH = genPth();
 
     private static Thm genPth() {
-        Thm t1 = Equal.apThm(FORALL_DEF, S); // |- !s = (\s. s = (\x. T)) s
+        Thm t1 = Equal.apThm(FORALL_DEF, S); // |- !s = \s. s = (\x. T) s
         return Equal.sym(Equal.betaRule(t1));
     }
 
     // GEN: A |- t ==> A |- !x. t
     public static Thm gen(Term.Var x, Thm t) {
-        Thm t1 = Thm.abs(x, eqtIntro(t)); // A |- (\x. t) = (\x. T)
+        Thm t1 = Thm.abs(x, eqtIntro(t)); // A |- (\x. t) = \x. T
         Term m = Term.destEq(t1.concl()).l(); // \x. t
-        Thm t2 = Thm.instType(Map.of(A, x.t()), GEN_PTH); // |- (s = (\x. T)) = !s
-        Thm t3 = Thm.inst(Map.of(rty(S, x.t()), m), t2); // |- ((\x. t) = (\x. T)) = !x. t
+        Thm t2 = Thm.instType(Map.of(A, x.t()), GEN_PTH); // |- (s = \x. T) = !s
+        Thm t3 = Thm.inst(Map.of(rty(S, x.t()), m), t2); // |- ((\x. t) = \x. T) = !x. t
         return Thm.eqMp(t3, t1);
+    }
+
+    // EXISTS_DEF: (?) = \s. !q. (!x. s x ==> q) ==> q
+    public static final Thm EXISTS_DEF = Thm.newBasicDef(Term.mkEq(new Term.Var("?", Type.fun(PRED, BOOL)),
+            lam(S, mkForall(Q, mkImp(mkForall(X, mkImp(app(S, X), Q)), Q)))));
+
+    private static Term exists(Type t) {
+        return new Term.Const("?", Type.fun(Type.fun(t, BOOL), BOOL));
+    }
+
+    public record Exists(Term.Var v, Term b) {
+        // the binding variable and the body
+    }
+
+    public static Term mkExists(Term.Var v, Term b) {
+        return app(exists(v.t()), lam(v, b));
+    }
+
+    public static boolean isExists(Term t) {
+        return t instanceof Term.Comb(Term.Const c, Term.Abs(Term.Var _, Term _)) && c.n().equals("?");
+    }
+
+    public static Exists destExists(Term t) {
+        if (t instanceof Term.Comb(Term.Const c, Term.Abs(Term.Var v, Term b)) && c.n().equals("?"))
+            return new Exists(v, b);
+        throw new HolException("destExists: not an existential quantification: " + t);
+    }
+
+    // EXISTS_S: |- ?s = !q. (!x. s x ==> q) ==> q
+    private static final Thm EXISTS_S = Equal.betaRule(Equal.apThm(EXISTS_DEF, S));
+
+    // EXISTS_PTH: s x |- ?s
+    private static final Thm EXISTS_PTH = existsPth();
+
+    private static Thm existsPth() {
+        Thm t1 = spec(X, Thm.assume(mkForall(X, mkImp(app(S, X), Q)))); // !x. s x ==> q |- s x ==> q
+        Thm t2 = disch(mkForall(X, mkImp(app(S, X), Q)), mp(t1, Thm.assume(app(S, X)))); // s x |- (!x. s x ==> q) ==> q
+        return Thm.eqMp(Equal.sym(EXISTS_S), gen(Q, t2));
+    }
+
+    // EXISTS: A |- t[s/x] ==> A |- ?x. t
+    public static Thm exists(Term e, Term s, Thm t) {
+        Exists x = destExists(e);
+        Type y = x.v().t();
+        if (!Term.typeOf(s).equals(y))
+            throw new HolException("exists: type mismatch: " + s + " for " + x.v());
+        Term m = lam(x.v(), x.b());
+        Thm t1 = Equal.betaConv(app(m, s)); // |- (\x. t) s = t[s/x]
+        Thm t2 = Thm.instType(Map.of(A, y), EXISTS_PTH); // s x |- ?s
+        Thm t3 = Thm.inst(Map.of(rty(S, y), m, rty(X, y), s), t2); // (\x. t) s |- ?x. t
+        return proveHyp(Thm.eqMp(Equal.sym(t1), t), t3);
+    }
+
+    // CHOOSE_PTH: |- (!x. s x ==> q) ==> (?s ==> q)
+    private static final Thm CHOOSE_PTH = choosePth();
+
+    private static Thm choosePth() {
+        Term e = app(exists(A), S);
+        Thm t = spec(Q, Thm.eqMp(EXISTS_S, Thm.assume(e))); // ?s |- (!x. s x ==> q) ==> q
+        return dischAll(disch(e, undisch(t)));
+    }
+
+    // A |- ?x. t, B \/ {t[v/x]} |- u ==> A \/ B |- u
+    public static Thm choose(Term.Var v, Thm t1, Thm t2) {
+        Exists x = destExists(t1.concl());
+        Type y = x.v().t();
+        Term m = lam(x.v(), x.b());
+        Term c = app(m, v);
+        Term p = Term.vsubst(Map.of(x.v(), v), x.b());
+        Thm t3 = Thm.eqMp(Equal.betaConv(c), Thm.assume(c)); // (\x. t) v |- t[v/x]
+        Thm t4 = gen(v, disch(c, mp(disch(p, t2), t3))); // B |- !v. (\x. t) v ==> u
+        Thm t5 = Thm.instType(Map.of(A, y), CHOOSE_PTH); // |- (!x. s x ==> q) ==> (?s ==> q)
+        Thm t6 = Thm.inst(Map.of(rty(S, y), m, Q, t2.concl()), t5); // |- (!x. (\x. t) x ==> u) ==> (?x. t ==> u)
+        return mp(mp(t6, t4), t1);
     }
 }
