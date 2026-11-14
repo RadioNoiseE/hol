@@ -33,6 +33,7 @@ public class Tests {
         Check.section("definitions", Tests::defTests);
         Check.section("Equal", Tests::equalTests);
         Check.section("forall", Tests::forallTests);
+        Check.section("exists", Tests::equalTests);
         Check.section("bool", Tests::boolTests);
         Check.section("implication", Tests::impTests);
         Check.report();
@@ -409,6 +410,24 @@ public class Tests {
         Check.checkThrow("gen: variable free in hypotheses", () -> Bool.gen(p, Thm.assume(p)));
         Check.checkThrow("spec: wrong type", () -> Bool.spec(p, g));
         Check.checkThrow("spec needs a universal", () -> Bool.spec(p, Thm.assume(p)));
+    }
+
+    static void existsTests() {
+        prints("|- (?) = (\\s:'a -> bool. (!) (\\q:bool. (==>) ((!) (\\x:'a. (==>) (s x) q)) q))", Bool.EXISTS_DEF);
+        Term e = Bool.mkExists(x, eq(x, y));
+        prints("|- (?) (\\x:'a. x = y)", Bool.exists(e, y, Thm.refl(y)));
+        prints("q |- (?) (\\p:bool. p)", Bool.exists(Bool.mkExists(p, p), q, Thm.assume(q))); // over bool: needs rty
+        Check.checkThrow("exists: the witness must fit", () -> Bool.exists(e, x, Thm.refl(y)));
+        Term c = Bool.mkExists(x, Bool.mkConj(eq(x, x), q));
+        Thm h = Bool.conjunct2(Thm.assume(Bool.mkConj(eq(z, z), q))); // (z = z) /\ q |- q
+        prints("(?) (\\x:'a. (/\\) (x = x) q) |- q", Bool.choose(z, Thm.assume(c), h));
+        Check.checkThrow("choose: v escapes into the conclusion",
+                () -> Bool.choose(z, Thm.assume(c), Bool.conjunct1(Thm.assume(Bool.mkConj(eq(z, z), q)))));
+        Check.checkThrow("choose: v free in other hypotheses",
+                () -> Bool.choose(z, Thm.assume(c), Bool.addAssum(eq(z, z), h)));
+        Term c2 = Bool.mkExists(p, Bool.mkConj(p, q));
+        prints("(?) (\\p:bool. (/\\) p q) |- q",
+                Bool.choose(zBool, Thm.assume(c2), Bool.conjunct2(Thm.assume(Bool.mkConj(zBool, q)))));
     }
 
     static void boolTests() {
