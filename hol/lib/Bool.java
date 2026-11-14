@@ -366,12 +366,12 @@ public final class Bool {
         return mp(mp(t6, t4), t1);
     }
 
-    // OR_DEF: |- (\/) = \p q. !r (p ==> r) ==> (q ==> r) ==> r
+    // OR_DEF: |- (\/) = \p q. !r. (p ==> r) ==> (q ==> r) ==> r
     public static final Thm OR_DEF = Thm
             .newBasicDef(Term.mkEq(new Term.Var("\\/", BINOP),
-                    lam(P, lam(Q, mkExists(R, mkImp(mkImp(P, R), mkImp(mkImp(Q, R), R)))))));
+                    lam(P, lam(Q, mkForall(R, mkImp(mkImp(P, R), mkImp(mkImp(Q, R), R)))))));
 
-    public static final Term OR = new Term.Const("/\\", BINOP);
+    public static final Term OR = new Term.Const("\\/", BINOP);
 
     public record Disj(Term l, Term r) {
         // the two sides of a disjunction
@@ -391,6 +391,47 @@ public final class Bool {
         throw new HolException("destDisj: not a disjunction: " + t);
     }
 
-    // OR_PQ: |- p \/ q = !r (p ==> r) ==> (q ==> r) ==> r
+    // OR_PQ: |- p \/ q = !r. (p ==> r) ==> (q ==> r) ==> r
     private static final Thm OR_PQ = Equal.betaRule(Equal.apThm(Equal.apThm(OR_DEF, P), Q));
+
+    // DISJ1_PTH: p |- p \/ q
+    // DISJ2_PTH: q |- p \/ q
+    private static final Thm DISJ1_PTH = disjunctPth(P);
+    private static final Thm DISJ2_PTH = disjunctPth(Q);
+
+    private static Thm disjunctPth(Term.Var v) {
+        Thm t1 = mp(Thm.assume(mkImp(v, R)), Thm.assume(v)); // {v} + {v ==> r} |- r
+        Thm t2 = gen(R, disch(mkImp(P, R), disch(mkImp(Q, R), t1))); // v |- !r. (p ==> r) ==> (q ==> r) ==> r
+        return Thm.eqMp(Equal.sym(OR_PQ), t2);
+    }
+
+    // DISJ1: A |- p ==> A |- p \/ q
+    public static Thm disj1(Thm t, Term s) {
+        return proveHyp(t, Thm.inst(Map.of(P, t.concl(), Q, s), DISJ1_PTH));
+    }
+
+    // DISJ2: A |- q ==> A |- p \/ q
+    public static Thm disj2(Term s, Thm t) {
+        return proveHyp(t, Thm.inst(Map.of(P, s, Q, t.concl()), DISJ2_PTH));
+    }
+
+    // DISJ_CASES_PTH: {p \/ q} + {p ==> r} + {q ==> r} |- r
+    private static final Thm DISJ_CASES_PTH = disjCasesPth();
+
+    private static Thm disjCasesPth() {
+        Thm t = spec(R, Thm.eqMp(OR_PQ, Thm.assume(mkDisj(P, Q)))); // p \/ q |- (p ==> r) ==> (q ==> r) ==> r
+        return undisch(undisch(t));
+    }
+
+    // DISJ_CASES: A |- p \/ q, B |- r, C |- r ==> A + (B - {p}) + (C - {q}) |- r
+    public static Thm disjCases(Thm t1, Thm t2, Thm t3) {
+        if (!Term.aconv(t2.concl(), t3.concl()))
+            throw new HolException("disjCases: conclusions differ: " + t2.concl() + " and " + t3.concl());
+        Disj d = destDisj(t1.concl());
+        Thm t4 = Thm.inst(Map.of(P, d.l(), Q, d.r(), R, t2.concl()), DISJ_CASES_PTH); // {p \/ q} + {p ==> r} + {q ==>
+                                                                                      // r} |- r
+        Thm t5 = Thm.eqMp(Thm.dar(t1, t4), t1); // A + ({p ==> r} + {q ==> r}) |- r
+        Thm t6 = proveHyp(disch(d.l(), t2), t5); // A + (B - {p}) + {q ==> r} |- r
+        return proveHyp(disch(d.r(), t3), t6);
+    }
 }
