@@ -17,7 +17,7 @@ public final class Bool {
     private static final Term.Var P = new Term.Var("p", BOOL);
     private static final Term.Var Q = new Term.Var("q", BOOL);
     private static final Term.Var R = new Term.Var("r", BOOL);
-    private static final Term.Var F = new Term.Var("f", BINOP);
+    private static final Term.Var E = new Term.Var("f", BINOP);
     private static final Term.Var X = new Term.Var("x", A);
     private static final Term.Var S = new Term.Var("s", PRED);
 
@@ -75,7 +75,7 @@ public final class Bool {
     // AND_DEF: |- (/\) = \p q. (\f. f p q) = (\f. f T T)
     public static final Thm AND_DEF = Thm
             .newBasicDef(Term.mkEq(new Term.Var("/\\", BINOP),
-                    lam(P, lam(Q, Term.mkEq(lam(F, app(F, P, Q)), lam(F, app(F, T, T)))))));
+                    lam(P, lam(Q, Term.mkEq(lam(E, app(E, P, Q)), lam(E, app(E, T, T)))))));
 
     public static final Term AND = new Term.Const("/\\", BINOP);
 
@@ -115,8 +115,8 @@ public final class Bool {
     private static final Thm CONJ_PTH = conjPth();
 
     private static Thm conjPth() {
-        Thm t1 = Thm.mkComb(Equal.apTerm(F, eqtIntro(Thm.assume(P))), eqtIntro(Thm.assume(Q))); // p, q |- f p q = f T T
-        Thm t2 = Thm.abs(F, t1); // p, q |- (\f. f p q) = \f. f T T
+        Thm t1 = Thm.mkComb(Equal.apTerm(E, eqtIntro(Thm.assume(P))), eqtIntro(Thm.assume(Q))); // p, q |- f p q = f T T
+        Thm t2 = Thm.abs(E, t1); // p, q |- (\f. f p q) = \f. f T T
         Thm t3 = Thm.eqMp(Equal.sym(AND_PQ), t2); // p, q |- p /\ q
         return Thm.dar(CONJUNCT2_PTH, t3);
     }
@@ -433,5 +433,84 @@ public final class Bool {
         Thm t5 = Thm.eqMp(Thm.dar(t1, t4), t1); // A + ({p ==> r} + {q ==> r}) |- r
         Thm t6 = proveHyp(disch(d.l(), t2), t5); // A + (B - {p}) + {q ==> r} |- r
         return proveHyp(disch(d.r(), t3), t6);
+    }
+
+    // F_DEF: |- F = !p. p
+    public static final Thm F_DEF = Thm.newBasicDef(Term.mkEq(new Term.Var("F", BOOL), mkForall(P, P)));
+
+    public static final Term F = new Term.Const("F", BOOL);
+
+    // NOT_DEF: |- (~) = \p. p ==> F
+    public static final Thm NOT_DEF = Thm
+            .newBasicDef(Term.mkEq(new Term.Var("~", Type.fun(BOOL, BOOL)), lam(P, mkImp(P, F))));
+
+    public static final Term NOT = new Term.Const("~", Type.fun(BOOL, BOOL));
+
+    public static Term mkNeg(Term t) {
+        return app(NOT, t);
+    }
+
+    public static boolean isNeg(Term t) {
+        return t instanceof Term.Comb(Term.Const c, Term _) && c.n().equals("~");
+    }
+
+    public static Term destNeg(Term t) {
+        if (t instanceof Term.Comb(Term.Const c, Term p) && c.n().equals("~"))
+            return p;
+        throw new HolException("destNeg: not a negation: " + t);
+    }
+
+    // NOT_P: |- ~p = (p ==> F)
+    private static final Thm NOT_P = Equal.betaRule(Equal.apThm(NOT_DEF, P));
+
+    // NOT_ELIM: A |- ~p ==> A |- p ==> F
+    public static Thm notElim(Thm t) {
+        return Thm.eqMp(Thm.inst(Map.of(P, destNeg(t.concl())), NOT_P), t);
+    }
+
+    // NOT_INTRO: (A |- p ==> F) ==> A |- ~p
+    public static Thm notIntro(Thm t) {
+        if (destImp(t.concl()).r().equals(F))
+            return Thm.eqMp(Thm.inst(Map.of(P, destImp(t.concl()).l()), Equal.sym(NOT_P)), t);
+        throw new HolException("notIntro: consequent is not F: " + t);
+    }
+
+    // CONTR_PTH: F |- p
+    private static final Thm CONTR_PTH = spec(P, Thm.eqMp(F_DEF, Thm.assume(F)));
+
+    // CONTR: A |- F ==> A |- p
+    public static Thm contr(Term p, Thm t) {
+        if (t.concl().equals(F))
+            return proveHyp(t, Thm.inst(Map.of(P, p), CONTR_PTH));
+        throw new HolException("contr: conclusion is not F: " + t);
+    }
+
+    // EQF_INTRO_PTH: ~p |- p = F
+    private static final Thm EQF_INTRO_PTH = eqfIntroPth();
+
+    private static Thm eqfIntroPth() {
+        Thm t1 = mp(notElim(Thm.assume(mkNeg(P))), Thm.assume(P)); // {~p} + {p} |- F
+        Thm t2 = contr(P, Thm.assume(F)); // F |- p
+        return Thm.dar(t2, t1);
+    }
+
+    // EQF_INTRO: A |- ~p ==> A |- p = F
+    public static Thm eqfIntro(Thm t) {
+        return proveHyp(t, Thm.inst(Map.of(P, destNeg(t.concl())), EQF_INTRO_PTH));
+    }
+
+    // EQF_ELIM_PTH: p = F |- ~p
+    private static final Thm EQF_ELIM_PTH = eqfElimPth();
+
+    private static Thm eqfElimPth() {
+        Thm t = Thm.eqMp(Thm.assume(Term.mkEq(P, F)), Thm.assume(P)); // {p = F} + {p} |- F
+        return notIntro(disch(P, t));
+    }
+
+    // EQF_ELIM: A |- p = F ==> A |- ~p
+    public static Thm eqfElim(Thm t) {
+        if (Term.destEq(t.concl()).r().equals(F))
+            return proveHyp(t, Thm.inst(Map.of(P, Term.destEq(t.concl()).l()), EQF_ELIM_PTH));
+        throw new HolException("eqfElim: right side is not F: " + t);
     }
 }
