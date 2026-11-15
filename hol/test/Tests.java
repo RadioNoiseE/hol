@@ -35,6 +35,7 @@ public class Tests {
         Check.section("forall", Tests::forallTests);
         Check.section("exists", Tests::equalTests);
         Check.section("bool", Tests::boolTests);
+        Check.section("negation", Tests::negTests);
         Check.section("implication", Tests::impTests);
         Check.section("disjunction", Tests::disjTests);
         Check.report();
@@ -450,6 +451,28 @@ public class Tests {
         prints("x = y, p |- (/\\) (x = y) p", Bool.conj(Thm.assume(eq(x, y)), Thm.assume(p)));
         prints("p |- (/\\) p p", Bool.conj(Thm.assume(p), Thm.assume(p))); // shared hypothesis kept once
         Check.checkThrow("conjunct1 needs a conjunction", () -> Bool.conjunct1(Thm.assume(p)));
+    }
+
+    static void negTests() {
+        prints("|- F = (!) (\\p:bool. p)", Bool.F_DEF);
+        prints("|- (~) = (\\p:bool. (==>) p F)", Bool.NOT_DEF);
+        prints("(~) p |- (==>) p F", Bool.notElim(Thm.assume(Bool.mkNeg(p))));
+        prints("(==>) p F |- (~) p", Bool.notIntro(Thm.assume(Bool.mkImp(p, Bool.F))));
+        prints("F |- q", Bool.contr(q, Thm.assume(Bool.F)));
+        prints("F |- x = y", Bool.contr(eq(x, y), Thm.assume(Bool.F)));
+        prints("(~) p |- p = F", Bool.eqfIntro(Thm.assume(Bool.mkNeg(p))));
+        prints("p = F |- (~) p", Bool.eqfElim(Thm.assume(eq(p, Bool.F))));
+        Thm a = Bool.mp(Bool.notElim(Thm.assume(Bool.mkNeg(p))), Thm.assume(p)); // p, ~p |- F
+        prints("p, (~) p |- F", a);
+        prints("|- (==>) ((~) p) ((==>) p q)", Bool.disch(Bool.mkNeg(p), Bool.disch(p, Bool.contr(q, a)))); // ~p ==> p
+                                                                                                            // ==> q
+        prints("|- (~) F", Bool.notIntro(Bool.disch(Bool.F, Thm.assume(Bool.F))));
+        Check.checkThrow("notElim needs a negation", () -> Bool.notElim(Thm.assume(p)));
+        Check.checkThrow("notIntro needs p ==> F", () -> Bool.notIntro(Thm.assume(Bool.mkImp(p, q))));
+        Check.checkThrow("contr needs F", () -> Bool.contr(q, Thm.assume(p)));
+        Check.checkThrow("contr needs a proposition", () -> Bool.contr(x, Thm.assume(Bool.F)));
+        Check.checkThrow("eqfIntro needs a negation", () -> Bool.eqfIntro(Thm.assume(p)));
+        Check.checkThrow("eqfElim needs p = F", () -> Bool.eqfElim(Thm.assume(eq(p, q))));
     }
 
     static void impTests() {
