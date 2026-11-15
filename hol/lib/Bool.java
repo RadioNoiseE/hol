@@ -36,7 +36,7 @@ public final class Bool {
         return new Term.Var(v.n(), Type.subst(Map.of(A, t), v.t()));
     }
 
-    // PROVE_HYP: A |- p, B |- q ==> A + (B - {p}) |- q
+    // PROVE_HYP: A |- p, B |- q => A + (B - {p}) |- q
     public static Thm proveHyp(Thm t1, Thm t2) {
         // if p is not in B, yield just B |- q
         if (t2.hyps().stream().noneMatch(h -> Term.aconv(h, t1.concl())))
@@ -53,7 +53,7 @@ public final class Bool {
     // TRUTH: |- T
     public static final Thm TRUTH = Thm.eqMp(Equal.sym(T_DEF), Thm.refl(lam(P, P)));
 
-    // EQT_ELIM: A |- t = T ==> A |- t
+    // EQT_ELIM: A |- p = T => A |- p
     public static Thm eqtElim(Thm t) {
         return Thm.eqMp(Equal.sym(t), TRUTH);
     }
@@ -62,17 +62,17 @@ public final class Bool {
     private static final Thm EQT_PTH = eqtPth();
 
     private static Thm eqtPth() {
-        Thm t1 = Thm.dar(Thm.assume(P), TRUTH); // p |- p, |- T ==> p |- p = T
-        Thm t2 = eqtElim(Thm.assume(t1.concl())); // p = T |- p = T ==> p = T |- p
+        Thm t1 = Thm.dar(Thm.assume(P), TRUTH); // p |- p = T
+        Thm t2 = eqtElim(Thm.assume(t1.concl())); // p = T |- p
         return Thm.dar(t2, t1);
     }
 
-    // EQT_INTRO: A |- t ==> A |- t = T
+    // EQT_INTRO: A |- p => A |- p = T
     public static Thm eqtIntro(Thm t) {
         return Thm.eqMp(Thm.inst(Map.of(P, t.concl()), EQT_PTH), t);
     }
 
-    // AND_DEF: |- (/\) = \p q. (\f. f p q) = (\f. f T T)
+    // AND_DEF: |- (/\) = \p q. (\f. f p q) = \f. f T T
     public static final Thm AND_DEF = Thm
             .newBasicDef(Term.mkEq(new Term.Var("/\\", BINOP),
                     lam(P, lam(Q, Term.mkEq(lam(E, app(E, P, Q)), lam(E, app(E, T, T)))))));
@@ -121,21 +121,21 @@ public final class Bool {
         return Thm.dar(CONJUNCT2_PTH, t3);
     }
 
-    // CONJ: A |- p, B |- q ==> A + B |- p /\ q
+    // CONJ: A |- p, B |- q => A + B |- p /\ q
     public static Thm conj(Thm t1, Thm t2) {
         Thm t3 = Thm.inst(Map.of(P, t1.concl(), Q, t2.concl()), CONJ_PTH); // p |- q = (p /\ q)
         Thm t4 = Thm.dar(t1, t3); // A - {q = (p /\ q)} |- p = (q = (p /\ q))
         return Thm.eqMp(Thm.eqMp(t4, t1), t2);
     }
 
-    // CONJUNCT1: A |- p /\ q ==> A |- p
+    // CONJUNCT1: A |- p /\ q => A |- p
     public static Thm conjunct1(Thm t) {
         Conj c = destConj(t.concl());
         Thm t1 = Thm.dar(t, Thm.inst(Map.of(P, c.l(), Q, c.r()), CONJUNCT1_PTH)); // A - {p} |- (p /\ q) = p
         return Thm.eqMp(t1, t);
     }
 
-    // CONJUNCT2: A |- p /\ q ==> A |- q
+    // CONJUNCT2: A |- p /\ q => A |- q
     public static Thm conjunct2(Thm t) {
         Conj c = destConj(t.concl());
         Thm t1 = Thm.dar(t, Thm.inst(Map.of(P, c.l(), Q, c.r()), CONJUNCT2_PTH)); // A - {q} |- (p /\ q) = q
@@ -181,7 +181,7 @@ public final class Bool {
         return Thm.dar(t3, t5);
     }
 
-    // MP: A |- p ==> q, B |- p ==> A + B |- q
+    // MP: A |- p ==> q, B |- p => A + B |- q
     public static Thm mp(Thm t1, Thm t2) {
         Imp i = destImp(t1.concl());
         if (!Term.aconv(i.l(), t2.concl()))
@@ -193,7 +193,7 @@ public final class Bool {
     // DISCH_PTH: |- ((p /\ q) = p) = (p ==> q)
     private static final Thm DISCH_PTH = Equal.sym(IMP_PQ);
 
-    // DISCH: p, A |- q ==> A - {p} |- p ==> q
+    // DISCH: A |- q => A - {p} |- p ==> q
     public static Thm disch(Term p, Thm t) {
         Thm t1 = conj(Thm.assume(p), t); // A + {p} |- p /\ q
         Thm t2 = conjunct1(Thm.assume(t1.concl())); // p /\ q |- p
@@ -202,26 +202,26 @@ public final class Bool {
         return Thm.eqMp(t4, t3);
     }
 
-    // DISCH_ALL: p1, ..., pn |- q ==> |- p1 ==> ... ==> pn ==> q
+    // DISCH_ALL: p1, ..., pn |- q => |- p1 ==> ... ==> pn ==> q
     public static Thm dischAll(Thm t) {
         while (!t.hyps().isEmpty())
             t = disch(t.hyps().get(0), t);
         return t;
     }
 
-    // UNDISCH: A |- p ==> q ==> A, p |- q
+    // UNDISCH: A |- p ==> q => A, p |- q
     public static Thm undisch(Thm t) {
         return mp(t, Thm.assume(destImp(t.concl()).l()));
     }
 
-    // UNDISCH_ALL: A |- p1 ==> ... ==> pn ==> q ==> A, p1, ..., pn |- q
+    // UNDISCH_ALL: A |- p1 ==> ... ==> pn ==> q => A, p1, ..., pn |- q
     public static Thm undischAll(Thm t) {
         while (isImp(t.concl()))
             t = undisch(t);
         return t;
     }
 
-    // ADD_ASSUM: A |- q ==> A, p |- q
+    // ADD_ASSUM: A |- q => A, p |- q
     public static Thm addAssum(Term p, Thm t) {
         return mp(disch(p, t), Thm.assume(p));
     }
@@ -262,7 +262,7 @@ public final class Bool {
         return eqtElim(t3);
     }
 
-    // SPEC: A |- !x. t ==> A |- t[s/x]
+    // SPEC: A |- !x. t => A |- t[s/x]
     public static Thm spec(Term s, Thm t) {
         Forall f = destForall(t.concl());
         Type y = f.v().t();
@@ -275,16 +275,17 @@ public final class Bool {
         return Thm.eqMp(t4, t3);
     }
 
-    // GEN_PTH: |- (s = (\x. T)) = !s
+    // GEN_PTH: |- (s = \x. T) = !s
     private static final Thm GEN_PTH = genPth();
 
     private static Thm genPth() {
-        Thm t1 = Equal.apThm(FORALL_DEF, S); // |- !s = \s. s = (\x. T) s
+        Thm t1 = Equal.apThm(FORALL_DEF, S); // |- !s = (\s. s = \x. T) s
         return Equal.sym(Equal.betaRule(t1));
     }
 
-    // GEN: A |- t ==> A |- !x. t
+    // GEN: A |- t => A |- !x. t
     public static Thm gen(Term.Var x, Thm t) {
+        // x not free in A
         Thm t1 = Thm.abs(x, eqtIntro(t)); // A |- (\x. t) = \x. T
         Term m = Term.destEq(t1.concl()).l(); // \x. t
         Thm t2 = Thm.instType(Map.of(A, x.t()), GEN_PTH); // |- (s = \x. T) = !s
@@ -292,7 +293,7 @@ public final class Bool {
         return Thm.eqMp(t3, t1);
     }
 
-    // EXISTS_DEF: (?) = \s. !q. (!x. s x ==> q) ==> q
+    // EXISTS_DEF: |- (?) = \s. !q. (!x. s x ==> q) ==> q
     public static final Thm EXISTS_DEF = Thm.newBasicDef(Term.mkEq(new Term.Var("?", Type.fun(PRED, BOOL)),
             lam(S, mkForall(Q, mkImp(mkForall(X, mkImp(app(S, X), Q)), Q)))));
 
@@ -330,7 +331,7 @@ public final class Bool {
         return Thm.eqMp(Equal.sym(EXISTS_S), gen(Q, t2));
     }
 
-    // EXISTS: A |- t[s/x] ==> A |- ?x. t
+    // EXISTS: A |- t[s/x] => A |- ?x. t
     public static Thm exists(Term e, Term s, Thm t) {
         Exists x = destExists(e);
         Type y = x.v().t();
@@ -352,15 +353,16 @@ public final class Bool {
         return dischAll(disch(e, undisch(t)));
     }
 
-    // CHOOSE: A |- ?x. t, B + {t[v/x]} |- u ==> A + B |- u
+    // CHOOSE: A |- ?x. t, B + {t[v/x]} |- u => A + B |- u
     public static Thm choose(Term.Var v, Thm t1, Thm t2) {
+        // v not free in ?x. t, u, B
         Exists x = destExists(t1.concl());
         Type y = x.v().t();
         Term m = lam(x.v(), x.b());
         Term c = app(m, v);
         Term p = Term.vsubst(Map.of(x.v(), v), x.b());
         Thm t3 = Thm.eqMp(Equal.betaConv(c), Thm.assume(c)); // (\x. t) v |- t[v/x]
-        Thm t4 = gen(v, disch(c, mp(disch(p, t2), t3))); // B |- !v. (\x. t) v ==> u
+        Thm t4 = gen(v, disch(c, mp(disch(p, t2), t3))); // B - {t[v/x]} |- !v. (\x. t) v ==> u
         Thm t5 = Thm.instType(Map.of(A, y), CHOOSE_PTH); // |- (!x. s x ==> q) ==> (?s ==> q)
         Thm t6 = Thm.inst(Map.of(rty(S, y), m, Q, t2.concl()), t5); // |- (!x. (\x. t) x ==> u) ==> (?x. t ==> u)
         return mp(mp(t6, t4), t1);
@@ -400,22 +402,22 @@ public final class Bool {
     private static final Thm DISJ2_PTH = disjunctPth(Q);
 
     private static Thm disjunctPth(Term.Var v) {
-        Thm t1 = mp(Thm.assume(mkImp(v, R)), Thm.assume(v)); // {v} + {v ==> r} |- r
+        Thm t1 = mp(Thm.assume(mkImp(v, R)), Thm.assume(v)); // v, v ==> r |- r
         Thm t2 = gen(R, disch(mkImp(P, R), disch(mkImp(Q, R), t1))); // v |- !r. (p ==> r) ==> (q ==> r) ==> r
         return Thm.eqMp(Equal.sym(OR_PQ), t2);
     }
 
-    // DISJ1: A |- p ==> A |- p \/ q
+    // DISJ1: A |- p => A |- p \/ q
     public static Thm disj1(Thm t, Term s) {
         return proveHyp(t, Thm.inst(Map.of(P, t.concl(), Q, s), DISJ1_PTH));
     }
 
-    // DISJ2: A |- q ==> A |- p \/ q
+    // DISJ2: A |- q => A |- p \/ q
     public static Thm disj2(Term s, Thm t) {
         return proveHyp(t, Thm.inst(Map.of(P, s, Q, t.concl()), DISJ2_PTH));
     }
 
-    // DISJ_CASES_PTH: {p \/ q} + {p ==> r} + {q ==> r} |- r
+    // DISJ_CASES_PTH: p \/ q, p ==> r, q ==> r |- r
     private static final Thm DISJ_CASES_PTH = disjCasesPth();
 
     private static Thm disjCasesPth() {
@@ -423,14 +425,13 @@ public final class Bool {
         return undisch(undisch(t));
     }
 
-    // DISJ_CASES: A |- p \/ q, B |- r, C |- r ==> A + (B - {p}) + (C - {q}) |- r
+    // DISJ_CASES: A |- p \/ q, B |- r, C |- r => A + (B - {p}) + (C - {q}) |- r
     public static Thm disjCases(Thm t1, Thm t2, Thm t3) {
         if (!Term.aconv(t2.concl(), t3.concl()))
             throw new HolException("disjCases: conclusions differ: " + t2.concl() + " and " + t3.concl());
         Disj d = destDisj(t1.concl());
-        Thm t4 = Thm.inst(Map.of(P, d.l(), Q, d.r(), R, t2.concl()), DISJ_CASES_PTH); // {p \/ q} + {p ==> r} + {q ==>
-                                                                                      // r} |- r
-        Thm t5 = Thm.eqMp(Thm.dar(t1, t4), t1); // A + ({p ==> r} + {q ==> r}) |- r
+        Thm t4 = Thm.inst(Map.of(P, d.l(), Q, d.r(), R, t2.concl()), DISJ_CASES_PTH); // p \/ q, p ==> r, q ==> r |- r
+        Thm t5 = Thm.eqMp(Thm.dar(t1, t4), t1); // A + {p ==> r} + {q ==> r} |- r
         Thm t6 = proveHyp(disch(d.l(), t2), t5); // A + (B - {p}) + {q ==> r} |- r
         return proveHyp(disch(d.r(), t3), t6);
     }
@@ -463,12 +464,12 @@ public final class Bool {
     // NOT_P: |- ~p = (p ==> F)
     private static final Thm NOT_P = Equal.betaRule(Equal.apThm(NOT_DEF, P));
 
-    // NOT_ELIM: A |- ~p ==> A |- p ==> F
+    // NOT_ELIM: A |- ~p => A |- p ==> F
     public static Thm notElim(Thm t) {
         return Thm.eqMp(Thm.inst(Map.of(P, destNeg(t.concl())), NOT_P), t);
     }
 
-    // NOT_INTRO: (A |- p ==> F) ==> A |- ~p
+    // NOT_INTRO: A |- p ==> F => A |- ~p
     public static Thm notIntro(Thm t) {
         Imp i = destImp(t.concl());
         if (Term.aconv(i.r(), F))
@@ -479,7 +480,7 @@ public final class Bool {
     // CONTR_PTH: F |- p
     private static final Thm CONTR_PTH = spec(P, Thm.eqMp(F_DEF, Thm.assume(F)));
 
-    // CONTR: A |- F ==> A |- p
+    // CONTR: A |- F => A |- p
     public static Thm contr(Term p, Thm t) {
         if (Term.aconv(t.concl(), F))
             return proveHyp(t, Thm.inst(Map.of(P, p), CONTR_PTH));
@@ -490,12 +491,12 @@ public final class Bool {
     private static final Thm EQF_INTRO_PTH = eqfIntroPth();
 
     private static Thm eqfIntroPth() {
-        Thm t1 = mp(notElim(Thm.assume(mkNeg(P))), Thm.assume(P)); // {~p} + {p} |- F
+        Thm t1 = mp(notElim(Thm.assume(mkNeg(P))), Thm.assume(P)); // ~p, p |- F
         Thm t2 = contr(P, Thm.assume(F)); // F |- p
         return Thm.dar(t2, t1);
     }
 
-    // EQF_INTRO: A |- ~p ==> A |- p = F
+    // EQF_INTRO: A |- ~p => A |- p = F
     public static Thm eqfIntro(Thm t) {
         return proveHyp(t, Thm.inst(Map.of(P, destNeg(t.concl())), EQF_INTRO_PTH));
     }
@@ -504,11 +505,11 @@ public final class Bool {
     private static final Thm EQF_ELIM_PTH = eqfElimPth();
 
     private static Thm eqfElimPth() {
-        Thm t = Thm.eqMp(Thm.assume(Term.mkEq(P, F)), Thm.assume(P)); // {p = F} + {p} |- F
+        Thm t = Thm.eqMp(Thm.assume(Term.mkEq(P, F)), Thm.assume(P)); // p = F, p |- F
         return notIntro(disch(P, t));
     }
 
-    // EQF_ELIM: A |- p = F ==> A |- ~p
+    // EQF_ELIM: A |- p = F => A |- ~p
     public static Thm eqfElim(Thm t) {
         Term.Eq e = Term.destEq(t.concl());
         if (Term.aconv(e.r(), F))
