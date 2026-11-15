@@ -470,8 +470,9 @@ public final class Bool {
 
     // NOT_INTRO: (A |- p ==> F) ==> A |- ~p
     public static Thm notIntro(Thm t) {
-        if (destImp(t.concl()).r().equals(F))
-            return Thm.eqMp(Thm.inst(Map.of(P, destImp(t.concl()).l()), Equal.sym(NOT_P)), t);
+        Imp i = destImp(t.concl());
+        if (Term.aconv(i.r(), F))
+            return Thm.eqMp(Thm.inst(Map.of(P, i.l()), Equal.sym(NOT_P)), t);
         throw new HolException("notIntro: consequent is not F: " + t);
     }
 
@@ -480,7 +481,7 @@ public final class Bool {
 
     // CONTR: A |- F ==> A |- p
     public static Thm contr(Term p, Thm t) {
-        if (t.concl().equals(F))
+        if (Term.aconv(t.concl(), F))
             return proveHyp(t, Thm.inst(Map.of(P, p), CONTR_PTH));
         throw new HolException("contr: conclusion is not F: " + t);
     }
@@ -509,8 +510,9 @@ public final class Bool {
 
     // EQF_ELIM: A |- p = F ==> A |- ~p
     public static Thm eqfElim(Thm t) {
-        if (Term.destEq(t.concl()).r().equals(F))
-            return proveHyp(t, Thm.inst(Map.of(P, Term.destEq(t.concl()).l()), EQF_ELIM_PTH));
+        Term.Eq e = Term.destEq(t.concl());
+        if (Term.aconv(e.r(), F))
+            return proveHyp(t, Thm.inst(Map.of(P, e.l()), EQF_ELIM_PTH));
         throw new HolException("eqfElim: right side is not F: " + t);
     }
 }
