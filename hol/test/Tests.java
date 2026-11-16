@@ -33,7 +33,7 @@ public class Tests {
         Check.section("definitions", Tests::defTests);
         Check.section("Equal", Tests::equalTests);
         Check.section("forall", Tests::forallTests);
-        Check.section("exists", Tests::equalTests);
+        Check.section("exists", Tests::existsTests);
         Check.section("bool", Tests::boolTests);
         Check.section("negation", Tests::negTests);
         Check.section("implication", Tests::impTests);
