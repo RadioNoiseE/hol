@@ -45,7 +45,7 @@ public final class Classical {
         // v not free in f
         if (!(t instanceof Term.Abs(Term.Var v, Term.Comb(Term f, Term.Var w))) || !v.equals(w) || Term.freeIn(v, f))
             throw new HolException("etaConv: not an eta-redex: " + t);
-        Map<Type.Var, Type> theta = Map.of(A, v.t(), A, Type.range(Term.typeOf(f)));
+        Map<Type.Var, Type> theta = Map.of(A, v.t(), B, Type.range(Term.typeOf(f)));
         Thm t1 = Thm.instType(theta, ETA_PTH); // |- (\x. g x) = g
         Thm t2 = Thm.inst(Map.of(rty(theta, G), f), t1); // |- (\x. f x) = f
         return Thm.trans(Thm.refl(t), t2);
