@@ -163,4 +163,37 @@ public final class Thm {
         Sig.newConst(v.n(), v.t());
         return new Thm(List.of(), Term.mkEq(new Term.Const(v.n(), v.t()), e.r()));
     }
+
+    public record TypeDef(Thm ar, Thm ra) {
+        // abs after rep and rep after abs
+    }
+
+    // NEW_BASIC_TYPE_DEF: |- P x => |- abs (rep a) = a, |- P r = (rep (abs r) = r)
+    public static TypeDef newBasicTypeDef(String n, String abs, String rep, Thm t) {
+        if (!t.hyps().isEmpty())
+            throw new HolException("newBasicTypeDef: the theorem has hypotheses: " + t);
+        if (!(t.concl() instanceof Term.Comb(Term p, Term x)))
+            throw new HolException("newBasicTypeDef: not a combination: " + t.concl());
+        if (!Term.frees(p).isEmpty())
+            throw new HolException("newBasicTypeDef: the predicate has free variables " + Term.frees(p));
+        if (Sig.types().containsKey(n))
+            throw new HolException("newBasicTypeDef: type " + n + " is already declared");
+        if (abs.equals(rep) || Sig.consts().containsKey(abs) || Sig.consts().containsKey(rep))
+            throw new HolException(
+                    "newBasicTypeDef: constant names " + abs + " and " + rep + " are not fresh and distinct");
+        List<Type> vs = List.copyOf(Term.tyvars(p));
+        Sig.newType(n, vs.size());
+        Type aty = new Type.App(n, vs);
+        Type rty = Term.typeOf(x);
+        Sig.newConst(abs, Type.fun(rty, aty));
+        Sig.newConst(rep, Type.fun(aty, rty));
+        Term c1 = new Term.Const(abs, Type.fun(rty, aty));
+        Term c2 = new Term.Const(rep, Type.fun(aty, rty));
+        Term.Var a = new Term.Var("a", aty);
+        Term.Var r = new Term.Var("r", rty);
+        Thm t1 = new Thm(List.of(), Term.mkEq(new Term.Comb(c1, new Term.Comb(c2, a)), a));
+        Thm t2 = new Thm(List.of(), Term.mkEq(new Term.Comb(p, r),
+                Term.mkEq(new Term.Comb(c2, new Term.Comb(c1, r)), r)));
+        return new TypeDef(t1, t2);
+    }
 }
