@@ -68,6 +68,10 @@ public class Tests {
     static final Term.Var kBool = var("k", BOOL);
 
     static {
+        Sig.newType("list", 1);
+        Sig.newType("prod", 2);
+        Sig.newType("triple", 3);
+
         Sig.newConst("c", A);
         Sig.newConst("x", A);
     }
@@ -256,8 +260,9 @@ public class Tests {
         noMatch(fun(A, A), fun(B, B, B, B)); // 'b -> 'b -> 'b -> 'b
         noMatch(op("triple", A, A, A), op("triple", BOOL, B, BOOL));
         noMatch(op("list", A), op("prod", A, A)); // different operators
-        noMatch(op("list", A), op("list", BOOL, BOOL)); // target has more arguments
-        noMatch(op("list", A, A), op("list", BOOL)); // target has fewer arguments
+
+        Check.checkThrow("list takes one argument, not two", () -> op("list", BOOL, BOOL));
+        Check.checkThrow("undeclared type operator", () -> op("foo"));
     }
 
     static void eqTests() {
