@@ -18,6 +18,8 @@ public sealed interface Type permits Type.Var, Type.App {
     record App(String o, List<Type> a) implements Type {
         public App {
             a = List.copyOf(a);
+            if (Sig.typeArity(o) != a.size())
+                throw new HolException("App: " + o + " expects " + Sig.typeArity(o) + " arguments, got " + a.size());
         }
 
         @Override
