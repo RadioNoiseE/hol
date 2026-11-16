@@ -38,6 +38,7 @@ public class Tests {
         Check.section("negation", Tests::negTests);
         Check.section("implication", Tests::impTests);
         Check.section("disjunction", Tests::disjTests);
+        Check.section("classical", Tests::classicalTests);
         Check.report();
     }
 
@@ -510,5 +511,22 @@ public class Tests {
         Check.checkThrow("disjCases needs a disjunction",
                 () -> Bool.disjCases(Thm.assume(p), Thm.assume(p), Thm.assume(p)));
         Check.checkThrow("disj1: the disjunct must be a proposition", () -> Bool.disj1(Thm.assume(p), x));
+    }
+
+    static void classicalTests() {
+        prints("|- (!) (\\g:'a -> 'b. (\\x:'a. g x) = g)", Classical.ETA_AX);
+        prints("|- (!) (\\s:'a -> bool. (!) (\\x:'a. (==>) (s x) (s ((@) s))))", Classical.SELECT_AX);
+        prints("|- (!) (\\p:bool. (\\/) p ((~) p))", Classical.EXCLUDED_MIDDLE);
+        prints("|- (\\x:'a. f x) = f", Classical.etaConv(lam(x, new Term.Comb(f, x))));
+        prints("|- (\\y:'a. f y) = f", Classical.etaConv(lam(y, new Term.Comb(f, y)))); // the user's binder is kept
+        Check.checkThrow("etaConv: body must apply to the binder",
+                () -> Classical.etaConv(lam(x, new Term.Comb(f, y))));
+        Check.checkThrow("etaConv needs an application", () -> Classical.etaConv(lam(x, x)));
+        prints("|- (\\/) q ((~) q)", Bool.spec(q, Classical.EXCLUDED_MIDDLE));
+        Thm h = Bool.mp(Bool.notElim(Thm.assume(Bool.mkNeg(Bool.mkNeg(p)))), Thm.assume(Bool.mkNeg(p))); // ~~p, ~p |- F
+        prints("(~) ((~) p) |- p", Classical.ccontr(p, h)); // double-negation elimination
+        Check.checkThrow("ccontr needs F", () -> Classical.ccontr(p, Thm.assume(p)));
+        Check.checkHold("exactly the two axioms",
+                Thm.axioms().contains(Classical.ETA_AX) && Thm.axioms().contains(Classical.SELECT_AX));
     }
 }
