@@ -1,154 +1,37 @@
-General Rules:
+1.  Records, methods, constants, fields: an idiomatic abbreviation or
+    the full word.  Use HOL Light's name, in camel case, where one
+    exists.
 
-1. Records, methods and constants: an idiomatic abbreviation or the
-   full word.  If HOL Light has the operation, use its name in camel
-   case and abbreviate consistently if desired.  These need no
-   annotation.
+2.  Variables (parameters, components, locals), in order of
+    preference:
 
-2. Parameters and record components, in order of preference:
-   a. a reserved name from the table below;
-   b. the first letter of what the variable means;
-   c. the capital letters of its type name, or the type's first
-      letter;
-   d. several parameters with the same role and type: the same name
-      with digits appended to all of them
-   e. otherwise case by case, and add the result to the table.
+    a.  a reserved name (below);
+    b.  locals that matter across several lines: a short word or
+        abbreviation for the role (aty, rty, theta);
+    c.  a value derived from another variable: the next letter,
+        skipping reserved ones, or that name plus a digit;
+    d.  the first letter of the meaning;
+    e.  the type name's capitals, or its first letter;
+    f.  otherwise case by case.
 
-3. Fields: an idiomatic abbreviation or the full word.
+    Several variables with the same role and type: one name, with
+    digits on all of them (t1, t2).
 
-4. Local variables, in order of preference:
-  a. a reserved name from the table below;
-  b. a variable that matters across several lines: an abbreviation or
-     a short word for its role;
-  c. a value derived from a parameter or another local: the next
-     letter after that variable's letter, skipping reserved letters,
-     or append digit(s);
-  d. the first letter of what the variable means;
-  e. the capital letters of its type name, or the type's first letter;
-  f. otherwise case by case, and add the result to the table.
+3.  Booleans: a short word, so conditions read naturally.
 
-5. Booleans, anywhere: a short word, so conditions read naturally.
+4.  A collection of x is xs, but only when x is also in scope.
 
-6. A collection of things named x is named xs.  This rule only
-   applies when x needs to coexist with xs.
+5.  A reserved name may mean something else in a record, method or
+    case that does not use it in its reserved meaning.  Qualified
+    accessor calls do not count.
 
-7. A reserved name may take another meaning within a structure
-   (record, method or case) that does not declare a variable with its
-   reserved meaning.  Qualified accessor calls do not count as uses of
-   the name.
-
-8. A pattern variable takes the record's name or, when it binds a
-   component, that component's name.  These need no annotation.
+6.  Pattern variables take the name of the record or component they
+    bind.
 
 
-Reserved Names:
+    Reserved
 
-f, x         -> function and argument of an application, f(x)
-i, j         -> a loop index
-s, t, u      -> a term
-th           -> a theorem
-theta, sigma -> a substitution
-
-
-HolException.java:
-
-HolException(m) -> HolException for hol exception, m for message (2b)
-
-
-Type.java:
-
-Var(n)             -> Var for variable, n for name (2b)
-App(o, a)          -> App for application, o for operator, a for arguments (2b)
-var(n)             -> var for variable, n for name (2b)
-fun(d, r)          -> fun for function, d for domain, r for range (2b)
-isFun(t)           -> isFun for is function, t for type (2c, 7)
-domain(t)          -> domain for domain, t for type (2c, 7)
-range(t)           -> range for range, t for type (2c, 7)
-subst(theta, t)    -> subst for substitution, theta as reserved (2a),
-                      t for type (2c, 7); a (4d), as (6), l (4e)
-match(p, t)        -> match for match, p for pattern, t for target (2b)
-match(p, t, theta) -> match for match, p for pattern, t for target (2b), theta
-                      as reserved (2a); u, o2, bs (4c), i (4a)
-tyvars(t)          -> tyvars for type variables, t for type (2c, 7); vs (4e, d),
-                      as (4d, 6)
-show(t)            -> show for show, t for type (2c, 7); sb (4e)
-show(t, left, sb)  -> show for show, left for left of arrow (5), sb
-                      for string builder (2c); i (4a)
-
-
-Term.java:
-
-Pair(l, r)       -> Pair for pair, l for left, r for right (2b)
-Var(n, t)        -> Var for variable, n for name (2b), t for type (2b, 7)
-Const(n, t)      -> Const for const, n for name (2b), t for type (2b, 7);
-                    g, e (4d)
-Comb(f, x)       -> Comb for combination, f and x as reserved (2a); t (4e, 7)
-Abs(v, b)        -> Abs for abstraction, v for variable, b for body (2b)
-Eq(l, r)         -> Eq for equation, l for left, r for right (2b)
-mkEq(l, r)       -> mkEq for make equation, l for left, r for right (2b);
-                    t (4e, 7), c (4e)
-isEq(t)          -> isEq for is equation, t for term (2c); n (4d)
-destEq(t)        -> destEq for destruct equation, t for term (2c); n, l, r (4d)
-typeOf(t)        -> typeOf for type of, t for term (2c)
-frees(t)         -> frees for free variables, t for term (2c); vs (4e, 6)
-tyvars(t)        -> tyvars for type variables, t for term (2c); vs (4e, 6)
-freeIn(v, t)     -> freeIn for free in, v for var, t for term (2c)
-aconv(s, t)      -> aconv for alpha-conversion, s and t as reserved (2a)
-aconv(s, t, e)   -> aconv for alpha-conversion, s and t as reserved (2a),
-                    e for environment (2b); w (4c), p (4e), d, g, y, c (4c)
-variant(vs, v)   -> variant for variant, vs for vars (6), v for var (2c);
-                    ns (6), n (4d)
-vsubst(theta, t) -> vsubst for v-substitution, theta as reserved (2a),
-                    t for term (2c); e, v (4e), s (4a)
-vsub(theta, t)   -> vsub for v-substitution, theta as reserved (2a),
-                    t for term (2c), sigma (4a), vs (6), e (4e), capture (5),
-                    f (4d), w (4c)
-inst(theta, t)   -> inst for instantiation, theta as reserved (2a),
-                    t for term (2c); vs (6), w (4c), f (4d), clash (5)
-show(t)          -> show for show, t for term (2c); sb (4e)
-show(t, p, sb)   -> show for show, t for term (2c), p for precedence (2b),
-                    sb for string builder (2c); c, e (4e)
-
-
-Thm.java:
-
-axioms             -> axioms for axioms
-newAxiom(t)        -> newAxiom for new axiom, t for term (2a); th (4a)
-Thm(h, c)          -> Thm for theorem, h for hypothesis, c for conclusion (2b)
-hyps()             -> hyps for hypotheses
-concl()            -> concl for conclusion
-toString()         -> toString for to string, sb for string builder (2c);
-                      i (4a)
-contains(ts, s)    -> contains for contains, ts for terms (2a, 6), s for term
-                      (2a); t (4a)
-union(ss, ts)      -> union for union, ss for terms, ts for terms (2a, 6);
-                      us (4a, 6), t (4a)
-remove(ts, s)      -> remove for remove, ts for terms (2a, 6), s for term (2a);
-                      us (4a, 6), t (4a)
-refl(t)            -> refl for reflection, t for term (2c)
-trans(t1, t2)      -> trans for transitivity, t1 for theorem, t2 for theorem
-                      (2c, 2d); e1, e2 (4c, 4d)
-mkComb(t1, t2)     -> mkComb for make combination, t1 for theorem, t2 for
-                      theorem (2c, 2d); e1, e2 (4c, 4d)
-abs(v, t)          -> abs for abstraction, v for var, t for theorem (2c); e (4e),
-                      h (4c)
-beta(t)            -> beta for beta, t for term (2c)
-assume(t)          -> assume for assume, t for term (2c)
-eqMp(t1, t2)       -> eqMp for equality modus ponens, t1 for theorem, t2 for
-                      theorem (2c, 2d); e (4c)
-dar(t1, t2)        -> dar for deduct antisym rule, t1 for theorem, t2 for
-                      theorem (2c, 2d); h1, h2 (4c, 4d)
-inst(theta, t)     -> inst for instantiate, theta as reserved (2a), t for
-                      theorem (2c); hs (4c, 4d), h (4d)
-instType(theta, t) -> instType for instantiate type, theta as reserved (2a),
-                      t for theorem (2c); hs (4c, 4d), h (4d)
-newBasicDef(t)     -> newBasicDef for new basic definition, t for term (2c);
-                      e (4e)
-
-
-Sig.java:
-
-consts         -> consts for constants
-Sig()          -> Sig for signature
-newConst(n, t) -> newConst for new constant, n for name (2b), t for type (2c)
-constType(n)   -> constType for constant type, n for name (2b)
+f, x          function and argument of an application
+i, j          loop indices
+s, t, u       terms
+theta, sigma  substitutions
