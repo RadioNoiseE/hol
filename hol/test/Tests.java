@@ -39,6 +39,7 @@ public class Tests {
         Check.section("implication", Tests::impTests);
         Check.section("disjunction", Tests::disjTests);
         Check.section("classical", Tests::classicalTests);
+        Check.section("typedef", Tests::typeDefTests);
         Check.report();
     }
 
@@ -533,5 +534,33 @@ public class Tests {
         Check.checkThrow("ccontr needs F", () -> Classical.ccontr(p, Thm.assume(p)));
         Check.checkHold("exactly the two axioms",
                 Thm.axioms().contains(Classical.ETA_AX) && Thm.axioms().contains(Classical.SELECT_AX));
+    }
+
+    static void typeDefTests() {
+        Term pb = lam(p, p); // \p. p
+        Thm th = Thm.eqMp(Equal.sym(Equal.betaConv(app(pb, Bool.T))), Bool.TRUTH);
+        prints("|- (\\p:bool. p) T", th);
+        Thm.TypeDef d = Thm.newBasicTypeDef("unit", "mk_unit", "dest_unit", th);
+        prints("|- mk_unit (dest_unit a) = a", d.ar());
+        prints("|- (\\p:bool. p) r = (dest_unit (mk_unit r) = r)", d.ra());
+        Check.checkEqual("unit has no arguments", 0, Sig.typeArity("unit"));
+        Check.checkEqual("mk_unit : bool -> unit", fun(BOOL, op("unit")), Sig.constType("mk_unit"));
+
+        Thm th2 = Thm.eqMp(Equal.sym(Equal.betaConv(app(lam(x, Bool.T), y))), Bool.TRUTH); // |- (\x. T) y
+        Thm.TypeDef d2 = Thm.newBasicTypeDef("copy", "mk_copy", "dest_copy", th2);
+        prints("|- mk_copy (dest_copy a) = a", d2.ar());
+        Check.checkEqual("copy takes 'a as its argument", 1, Sig.typeArity("copy"));
+        Check.checkEqual("dest_copy : ('a)copy -> 'a", fun(op("copy", A), A), Sig.constType("dest_copy"));
+
+        Check.checkThrow("no hypotheses allowed",
+                () -> Thm.newBasicTypeDef("t1", "a1", "r1", Thm.assume(app(pb, p))));
+        Check.checkThrow("the conclusion must be P x",
+                () -> Thm.newBasicTypeDef("t2", "a2", "r2", Bool.TRUTH));
+        Check.checkThrow("the predicate must be closed", () -> Thm.newBasicTypeDef("t3", "a3", "r3",
+                Thm.eqMp(Equal.sym(Equal.betaConv(app(lam(x, eq(z, z)), y))), Thm.refl(z))));
+        Check.checkThrow("the type name must be new", () -> Thm.newBasicTypeDef("bool", "a4", "r4", th));
+        Check.checkThrow("the constant names must be new", () -> Thm.newBasicTypeDef("t5", "T", "r5", th));
+        Check.checkThrow("abs and rep must differ", () -> Thm.newBasicTypeDef("t6", "a6", "a6", th));
+        Check.checkHold("a failed definition declares nothing", !Sig.types().containsKey("t6"));
     }
 }
