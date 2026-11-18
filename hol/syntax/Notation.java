@@ -71,16 +71,6 @@ public final class Notation {
         looser.get(n1).add(n2);
     }
 
-    public static Order compare(String n1, String n2) {
-        if (n1.equals(n2))
-            return Order.SAME;
-        if (reaches(n1, n2))
-            return Order.TIGHTER;
-        if (reaches(n2, n1))
-            return Order.LOOSER;
-        return Order.UNRELATED;
-    }
-
     private static boolean reaches(String n1, String n2) {
         Deque<String> todo = new ArrayDeque<>();
         Set<String> seen = new HashSet<>();
@@ -97,6 +87,16 @@ public final class Notation {
 
     public static Assoc assoc(String n) {
         return infixes.get(n);
+    }
+
+    public static Order compare(String n1, String n2) {
+        if (n1.equals(n2))
+            return Order.SAME;
+        if (reaches(n1, n2))
+            return Order.TIGHTER;
+        if (reaches(n2, n1))
+            return Order.LOOSER;
+        return Order.UNRELATED;
     }
 
     public static boolean isInfix(String n) {
