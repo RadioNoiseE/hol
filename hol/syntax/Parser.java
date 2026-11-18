@@ -83,7 +83,7 @@ public final class Parser {
         return l;
     }
 
-    // operand := PREFIX operand | BINDER var+ '.' term | atom+
+    // operand := PREFIX operand | BINDER variable+ '.' term | atom+
     private Preterm operand() {
         String s = peek();
         if (s != null && Notation.isPrefix(s)) {
@@ -100,7 +100,7 @@ public final class Parser {
         return t;
     }
 
-    // binder := BINDER var+ '.' term
+    // binder := BINDER variable+ '.' term
     private Preterm binder(String b) {
         List<Preterm> vs = new ArrayList<>();
         do
@@ -115,7 +115,7 @@ public final class Parser {
         return t;
     }
 
-    // var := NAME | '(' NAME ':' type ')'
+    // variable := NAME | '(' NAME ':' type ')'
     private Preterm variable() {
         if (at("(")) {
             i++;
