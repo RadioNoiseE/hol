@@ -95,6 +95,8 @@ public final class Infer {
                 return v;
         if (Sig.consts().containsKey(n))
             return new Const(n, pretype(Sig.constType(n), new HashMap<>(), true));
+        if (Notation.isSpecial(n))
+            throw new HolException("infer: " + n + " has notation but is not a declared constant");
         return frees.computeIfAbsent(n, m -> new Var(m, fresh()));
     }
 
