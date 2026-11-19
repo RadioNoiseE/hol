@@ -110,15 +110,7 @@ public sealed interface Type permits Type.Var, Type.App {
     private static void show(Type t, boolean left, StringBuilder sb) {
         switch (t) {
             case Var v -> sb.append('\'').append(v.n());
-            case App(String _, List<Type> a) when isFun(t) -> {
-                if (left)
-                    sb.append('(');
-                show(a.get(0), true, sb);
-                sb.append(" -> ");
-                show(a.get(1), false, sb);
-                if (left)
-                    sb.append(')');
-            }
+            case App(String o, List<Type> a) when a.isEmpty() -> sb.append(o);
             case App(String o, List<Type> a) -> {
                 if (!a.isEmpty()) {
                     sb.append('(');
