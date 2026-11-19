@@ -14,6 +14,12 @@ image() {
     jar --create --file hol.jar -C out .
 }
 
+check() {
+    build
+    javac -p hol.jar --add-modules hol -d test/out $(find test -name '*.java')
+    java -p hol.jar --add-modules hol -cp test/out Check
+}
+
 shell() {
     image
     jshell --module-path hol.jar --add-modules hol
@@ -26,6 +32,7 @@ clean() {
 case "${1:-build}" in
     build) build;;
     image) image;;
+    check) check;;
     shell) shell;;
     clean) clean;;
     *)
