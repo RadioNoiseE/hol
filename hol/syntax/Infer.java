@@ -181,13 +181,13 @@ public final class Infer {
         Set<String> used = new HashSet<>();
         Set<Integer> open = new LinkedHashSet<>();
         collect(n, used, open);
-        char c = 'a';
-        String s;
+        int c = 0;
         for (int k : open) {
-            while (used.contains(s = letter(c)))
+            while (used.contains(letter(c)))
                 c++;
-            d.put(k, Type.var(s));
-            used.add(s);
+            d.put(k, Type.var(letter(c)));
+            used.add(letter(c));
+            c++;
         }
         return d;
     }
