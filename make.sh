@@ -15,7 +15,7 @@ image() {
 }
 
 check() {
-    build
+    image
     javac -p hol.jar --add-modules hol -d test/out $(find test -name '*.java')
     java -p hol.jar --add-modules hol -cp test/out Check
 }
