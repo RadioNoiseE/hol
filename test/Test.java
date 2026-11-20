@@ -5,8 +5,17 @@ import hol.syntax.*;
 class Test {
     static {
         Classical.EXCLUDED_MIDDLE.hashCode(); // load the theories
+
         Sig.newType("list", 1);
+        Sig.newType("prod", 2);
+        Sig.newType("trip", 3);
+
+        Sig.newConst("c", Type.var("a"));
     }
+
+    static final Type.Var A = Type.var("a");
+    static final Type.Var B = Type.var("b");
+    static final Type BOOL = Type.BOOL;
 
     static Type type(String s) {
         return Parser.parseType(s);
