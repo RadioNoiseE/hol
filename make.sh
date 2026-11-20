@@ -36,7 +36,7 @@ case "${1:-build}" in
     shell) shell;;
     clean) clean;;
     *)
-        echo "usage: $0 [build | image | shell | clean]" >&2
+        echo "usage: $0 [build | image | check | shell | clean]" >&2
         exit 2
         ;;
 esac
