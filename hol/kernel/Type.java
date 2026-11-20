@@ -6,6 +6,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.StringJoiner;
 
 public sealed interface Type permits Type.Var, Type.App {
     record Var(String n) implements Type {
@@ -102,27 +103,14 @@ public sealed interface Type permits Type.Var, Type.App {
     }
 
     static String show(Type t) {
-        StringBuilder sb = new StringBuilder();
-        show(t, false, sb);
-        return sb.toString();
-    }
-
-    private static void show(Type t, boolean left, StringBuilder sb) {
-        switch (t) {
-            case Var v -> sb.append('\'').append(v.n());
-            case App(String o, List<Type> a) when a.isEmpty() -> sb.append(o);
-            case App(String o, List<Type> a) -> {
-                if (!a.isEmpty()) {
-                    sb.append('(');
-                    for (int i = 0; i < a.size(); i++) {
-                        if (i > 0)
-                            sb.append(", ");
-                        show(a.get(i), false, sb);
-                    }
-                    sb.append(')');
-                }
-                sb.append(o);
+        return switch (t) {
+            case Var v -> "'" + v.n();
+            case App(String o, List<Type> as) -> {
+                StringJoiner j = new StringJoiner(", ", "(", ")").setEmptyValue("");
+                for (Type a : as)
+                    j.add(show(a));
+                yield j + o;
             }
-        }
+        };
     }
 }

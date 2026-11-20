@@ -238,33 +238,22 @@ public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
     }
 
     static String show(Term t) {
-        StringBuilder sb = new StringBuilder();
-        show(t, 0, sb);
-        return sb.toString();
+        return show(t, 0);
     }
 
     // p is 0 anywhere, 1 in function position, 2 in argument position
-    private static void show(Term t, int p, StringBuilder sb) {
-        switch (t) {
-            case Var v -> sb.append(v.n());
-            case Const c -> sb.append(c.n());
+    private static String show(Term t, int p) {
+        return switch (t) {
+            case Var v -> v.n();
+            case Const c -> c.n();
             case Comb(Term f, Term x) -> {
-                if (p > 1)
-                    sb.append('(');
-                show(f, 1, sb);
-                sb.append(' ');
-                show(x, 2, sb);
-                if (p > 1)
-                    sb.append(')');
+                String s = show(f, 1) + " " + show(x, 2);
+                yield p > 1 ? "(" + s + ")" : s;
             }
             case Abs(Var v, Term b) -> {
-                if (p > 0)
-                    sb.append('(');
-                sb.append('\\').append(v.n()).append(':').append(v.t()).append(". ");
-                show(b, 0, sb);
-                if (p > 0)
-                    sb.append(')');
+                String s = "\\" + v.n() + ":" + v.t() + ". " + show(b, 0);
+                yield p > 0 ? "(" + s + ")" : s;
             }
-        }
+        };
     }
 }
