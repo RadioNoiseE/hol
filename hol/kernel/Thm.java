@@ -7,7 +7,7 @@ import java.util.Map;
 public final class Thm {
     private static final List<Thm> axioms = new ArrayList<>();
 
-    // NEW_AXIOM: p ==> |- p
+    // NEW_AXIOM: p => |- p
     public static Thm newAxiom(Term t) {
         if (!Term.typeOf(t).equals(Type.BOOL))
             throw new HolException("newAxiom: not a proposition: " + t);
@@ -78,7 +78,7 @@ public final class Thm {
         return new Thm(List.of(), Term.mkEq(t, t));
     }
 
-    // TRANS: A |- s = t, B |- t = u ==> A \/ B |- s = u
+    // TRANS: A |- s = t, B |- t = u => A + B |- s = u
     public static Thm trans(Thm t1, Thm t2) {
         Term.Eq e1 = Term.destEq(t1.concl);
         Term.Eq e2 = Term.destEq(t2.concl);
@@ -87,15 +87,15 @@ public final class Thm {
         return new Thm(union(t1.hyps, t2.hyps), Term.mkEq(e1.l(), e2.r()));
     }
 
-    // MK_COMB: A |- f = g, B |- x = y ==> A \/ B |- f x = g y
+    // MK_COMB: A |- f = g, B |- x = y => A \/ B |- f x = g y
     public static Thm mkComb(Thm t1, Thm t2) {
         Term.Eq e1 = Term.destEq(t1.concl);
         Term.Eq e2 = Term.destEq(t2.concl);
         return new Thm(union(t1.hyps, t2.hyps),
-                Term.mkEq(new Term.Comb(e1.l(), e2.l()), new Term.Comb(e1.r(), e2.r())));
+            Term.mkEq(new Term.Comb(e1.l(), e2.l()), new Term.Comb(e1.r(), e2.r())));
     }
 
-    // ABS: A |- s = t ==> A |- (\v. s) = (\v. t)
+    // ABS: A |- s = t => A |- (\v. s) = (\v. t)
     public static Thm abs(Term.Var v, Thm t) {
         Term.Eq e = Term.destEq(t.concl);
         for (Term h : t.hyps)
@@ -120,7 +120,7 @@ public final class Thm {
         return new Thm(List.of(t), t);
     }
 
-    // EQ_MP: A |- p = q, B |- p ==> A \/ B |- q
+    // EQ_MP: A |- p = q, B |- p => A \/ B |- q
     public static Thm eqMp(Thm t1, Thm t2) {
         Term.Eq e = Term.destEq(t1.concl);
         if (!Term.aconv(e.l(), t2.concl))
@@ -128,14 +128,14 @@ public final class Thm {
         return new Thm(union(t1.hyps, t2.hyps), e.r());
     }
 
-    // DAR: A |- p, B |- q ==> (A - {q}) \/ (B - {p}) |- p = q
+    // DAR: A |- p, B |- q => (A - {q}) + (B - {p}) |- p = q
     public static Thm dar(Thm t1, Thm t2) {
         List<Term> h1 = remove(t1.hyps, t2.concl);
         List<Term> h2 = remove(t2.hyps, t1.concl);
         return new Thm(union(h1, h2), Term.mkEq(t1.concl, t2.concl));
     }
 
-    // INST: A |- p ==> theta(A) |- theta(p)
+    // INST: A |- p => theta(A) |- theta(p)
     public static Thm inst(Map<Term.Var, Term> theta, Thm t) {
         List<Term> hs = new ArrayList<>();
         for (Term h : t.hyps)
@@ -143,7 +143,7 @@ public final class Thm {
         return new Thm(union(List.of(), hs), Term.vsubst(theta, t.concl));
     }
 
-    // INST_TYPE: A |- p ==> theta(A) |- theta(p)
+    // INST_TYPE: A |- p => theta(A) |- theta(p)
     public static Thm instType(Map<Type.Var, Type> theta, Thm t) {
         List<Term> hs = new ArrayList<>();
         for (Term h : t.hyps)
@@ -151,7 +151,7 @@ public final class Thm {
         return new Thm(union(List.of(), hs), Term.inst(theta, t.concl));
     }
 
-    // NEW_BASIC_DEF: c = t ==> |- c = t
+    // NEW_BASIC_DEF: c = t => |- c = t
     public static Thm newBasicDef(Term t) {
         Term.Eq e = Term.destEq(t);
         if (!(e.l() instanceof Term.Var v))
@@ -180,7 +180,7 @@ public final class Thm {
             throw new HolException("newBasicTypeDef: type " + n + " is already declared");
         if (abs.equals(rep) || Sig.consts().containsKey(abs) || Sig.consts().containsKey(rep))
             throw new HolException(
-                    "newBasicTypeDef: constant names " + abs + " and " + rep + " are not fresh and distinct");
+                "newBasicTypeDef: constant names " + abs + " and " + rep + " are not fresh and distinct");
         List<Type> vs = List.copyOf(Term.tyvars(p));
         Sig.newType(n, vs.size());
         Type aty = new Type.App(n, vs);
@@ -193,7 +193,7 @@ public final class Thm {
         Term.Var r = new Term.Var("r", rty);
         Thm t1 = new Thm(List.of(), Term.mkEq(new Term.Comb(c1, new Term.Comb(c2, a)), a));
         Thm t2 = new Thm(List.of(), Term.mkEq(new Term.Comb(p, r),
-                Term.mkEq(new Term.Comb(c2, new Term.Comb(c1, r)), r)));
+            Term.mkEq(new Term.Comb(c2, new Term.Comb(c1, r)), r)));
         return new TypeDef(t1, t2);
     }
 }
