@@ -5,8 +5,8 @@ import java.util.Set;
 
 final class Kernel extends Test {
     static void run() {
-        fail(() -> type("list"));
-        fail(() -> type("fake"));
+        fail(() -> new Type.App("list", List.of()));
+        fail(() -> new Type.App("fake", List.of()));
 
         same(A, Type.domain(type("'a -> 'b")));
         same(B, Type.range(type("'a -> 'b")));
@@ -70,10 +70,12 @@ final class Kernel extends Test {
         same(term("\\(x':'a). (x:'a)"), Term.vsubst(Map.of(Y, term("x")), term("\\(x:'a). (y:'a)")));
         same(term("\\y. (g:'a->'a->'a) z (h (\\x. x))"),
                 Term.vsubst(Map.of(X, term("z")), term("\\y. (g:'a->'a->'a) x (h (\\x. x))")));
+        fail(() -> Term.vsubst(Map.of(X, prop("p")), term("x")));
 
         same(term("(x:bool) = y"), Term.inst(Map.of(A, BOOL), term("x = y")));
         same(term("\\(x:'a). (y:'b)"), Term.inst(Map.of(A, B, B, A), term("\\(x:'b). (y:'a)")));
         same(term("\\(x:'a) (x:'a). x"), Term.inst(Map.of(B, A), term("\\(x:'a) (x:'b). x")));
+        same(term("\\(x':'a). (x:'a)"), Term.inst(Map.of(B, A), new Term.Abs(X, new Term.Var("x", B))));
 
         fail(() -> Sig.newType("fun", 0));
 
@@ -92,6 +94,7 @@ final class Kernel extends Test {
         hold(Thm.trans(Thm.assume(prop("(f:'a->'a) = \\x. x")), Thm.assume(prop("(\\y. y) = (f:'a->'a)"))),
                 "(f:'a->'a) = f", "(f:'a->'a) = (\\x. x)", "(\\y. y) = (f:'a->'a)");
         fail(() -> Thm.trans(Thm.assume(prop("x = y")), Thm.assume(prop("x = z"))));
+        fail(() -> Thm.trans(Thm.assume(prop("p")), Thm.refl(prop("p"))));
 
         hold(Thm.mkComb(Thm.refl(term("(f:'a->'a)")), Thm.assume(prop("x = y"))), "(f:'a->'a) x = f y", "x = y");
         hold(Thm.mkComb(Thm.assume(prop("(f:'a->'a) = f'")), Thm.assume(prop("x = y"))), "(f:'a->'a) x = f' (y:'a)",
@@ -99,6 +102,7 @@ final class Kernel extends Test {
         same(1, Thm.mkComb(Thm.assume(prop("(\\x. x) = (f:'a->'a)")),
                 Thm.mkComb(Thm.assume(prop("(\\z. z) = (f:'a->'a)")), Thm.refl(term("x")))).hyps().size());
         fail(() -> Thm.mkComb(Thm.refl(term("(f:'a->'a)")), Thm.refl(prop("p"))));
+        fail(() -> Thm.mkComb(Thm.assume(prop("p")), Thm.refl(term("x"))));
 
         hold(Thm.abs(X, Thm.refl(term("(f:'a->'a) x"))), "(\\x. (f:'a->'a) x) = \\x. f x");
         hold(Thm.abs(Y, Thm.assume(prop("x = z"))), "(\\(y:'a). (x:'a)) = \\(y:'a). z", "x = z");
