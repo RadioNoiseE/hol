@@ -17,6 +17,9 @@ class Test {
     static final Type.Var B = Type.var("b");
     static final Type BOOL = Type.BOOL;
 
+    static final Term.Var X = new Term.Var("x", A);
+    static final Term.Var Y = new Term.Var("y", A);
+
     static Type type(String s) {
         return Parser.parseType(s);
     }
