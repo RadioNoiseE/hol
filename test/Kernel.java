@@ -74,5 +74,15 @@ final class Kernel extends Test {
         same(term("(x:bool) = y"), Term.inst(Map.of(A, BOOL), term("x = y")));
         same(term("\\(x:'a). (y:'b)"), Term.inst(Map.of(A, B, B, A), term("\\(x:'b). (y:'a)")));
         same(term("\\(x:'a) (x:'a). x"), Term.inst(Map.of(B, A), term("\\(x:'a) (x:'b). x")));
+
+        fail(() -> Sig.newType("fun", 0));
+
+        same(1, Sig.typeArity("list"));
+        same(2, Sig.typeArity("fun"));
+
+        fail(() -> Sig.newConst("=", BOOL));
+
+        same(type("'a -> 'a -> bool"), Sig.constType("="));
+        fail(() -> Sig.constType("undeclared"));
     }
 }
