@@ -8,7 +8,7 @@ public final class Equal {
         // cannot be instantiated
     }
 
-    // BETA_CONV: (\v. b) s ==> |- (\v. b) s = b[s/v]
+    // BETA_CONV: (\v. b) s => |- (\v. b) s = b[s/v]
     public static Thm betaConv(Term t) {
         if (!(t instanceof Term.Comb(Term.Abs(Term.Var v, Term b), Term x)))
             throw new HolException("betaConv: not a beta-redex: " + t);
@@ -33,22 +33,22 @@ public final class Equal {
         };
     }
 
-    // BETA_RULE: A |- t ==> A |- t'
+    // BETA_RULE: A |- t => A |- t'
     public static Thm betaRule(Thm t) {
         return Thm.eqMp(betaNorm(t.concl()), t);
     }
 
-    // AP_TERM: f, A |- x = y ==> A |- f x = f y
+    // AP_TERM: f, A |- x = y => A |- f x = f y
     public static Thm apTerm(Term f, Thm t) {
         return Thm.mkComb(Thm.refl(f), t);
     }
 
-    // AP_THM: A |- f = g, x ==> A |- f x = g x
+    // AP_THM: A |- f = g, x => A |- f x = g x
     public static Thm apThm(Thm t, Term x) {
         return Thm.mkComb(t, Thm.refl(x));
     }
 
-    // SYM: A |- l = r ==> A |- r = l
+    // SYM: A |- l = r => A |- r = l
     public static Thm sym(Thm t) {
         if (!Term.isEq(t.concl()) || !(t.concl() instanceof Term.Comb(Term.Comb(Term e, Term l), Term _)))
             throw new HolException("sym: not an equation: " + t.concl());
