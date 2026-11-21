@@ -408,8 +408,8 @@ public final class Bool {
     }
 
     // DISJ1: A |- p => A |- p \/ q
-    public static Thm disj1(Thm t, Term p) {
-        return proveHyp(t, Thm.inst(Map.of(P, t.concl(), Q, p), DISJ1_PTH));
+    public static Thm disj1(Thm t, Term q) {
+        return proveHyp(t, Thm.inst(Map.of(P, t.concl(), Q, q), DISJ1_PTH));
     }
 
     // DISJ2: A |- q => A |- p \/ q
