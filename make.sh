@@ -6,7 +6,7 @@ cd "$(dirname "$0")"
 
 build() {
     rm -rf out
-    javac -d out $(find . -name '*.java' -not -path './out/*' -not -path './dist/*')
+    javac -d out module-info.java $(find hol -name '*.java')
 }
 
 image() {
