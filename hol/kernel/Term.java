@@ -26,7 +26,7 @@ public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
             try {
                 Type.match(g, t);
             } catch (HolException e) {
-                throw new HolException("Const: " + n + " cannot have type " + t + " as its declared type is " + g);
+                throw new HolException("Const: " + n + " : " + t + " is not an instance of the declared type " + g);
             }
         }
 
