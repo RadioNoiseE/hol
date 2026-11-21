@@ -217,9 +217,9 @@ public final class Infer {
         }
     }
 
-    private static String letter(int n) {
-        String s = String.valueOf((char) ('a' + n % 26));
-        return n < 26 ? s : s + n / 26;
+    private static String letter(int k) {
+        String s = String.valueOf((char) ('a' + k % 26));
+        return k < 26 ? s : s + k / 26;
     }
 
     private Term build(Node n, Map<Integer, Type> d) {
