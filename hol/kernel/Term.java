@@ -164,10 +164,10 @@ public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
         return false;
     }
 
-    static Var variant(Set<Var> vs, Var v) {
+    static Var variant(Set<Var> us, Var v) {
         Set<String> ns = new HashSet<>();
-        for (Var w : vs)
-            ns.add(w.n());
+        for (Var u : us)
+            ns.add(u.n());
         String n = v.n();
         while (ns.contains(n))
             n += '\'';
@@ -223,15 +223,15 @@ public sealed interface Term permits Term.Var, Term.Const, Term.Comb, Term.Abs {
             case Comb(Term f, Term x) ->
                 new Comb(inst(theta, f), inst(theta, x));
             case Abs(Var v, Term b) -> {
-                Set<Var> vs = frees(b);
+                Set<Var> fs = frees(b);
                 Var w = new Var(v.n(), Type.subst(theta, v.t()));
                 boolean clash = false;
-                for (Var f : vs)
+                for (Var f : fs)
                     if (!f.equals(v) && inst(theta, f).equals(w))
                         clash = true;
                 if (!clash)
                     yield new Abs(w, inst(theta, b));
-                w = variant(vs, v);
+                w = variant(fs, v);
                 yield inst(theta, new Abs(w, vsubst(Map.of(v, w), b)));
             }
         };
