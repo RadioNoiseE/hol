@@ -11,9 +11,9 @@ public final class Thm {
     public static Thm newAxiom(Term t) {
         if (!Term.typeOf(t).equals(Type.BOOL))
             throw new HolException("newAxiom: not a proposition: " + t);
-        Thm th = new Thm(List.of(), t);
-        axioms.add(th);
-        return th;
+        Thm m = new Thm(List.of(), t);
+        axioms.add(m);
+        return m;
     }
 
     public static List<Thm> axioms() {
@@ -92,7 +92,7 @@ public final class Thm {
         Term.Eq e1 = Term.destEq(t1.concl);
         Term.Eq e2 = Term.destEq(t2.concl);
         return new Thm(union(t1.hyps, t2.hyps),
-            Term.mkEq(new Term.Comb(e1.l(), e2.l()), new Term.Comb(e1.r(), e2.r())));
+                Term.mkEq(new Term.Comb(e1.l(), e2.l()), new Term.Comb(e1.r(), e2.r())));
     }
 
     // ABS: A |- s = t => A |- (\v. s) = (\v. t)
@@ -180,7 +180,7 @@ public final class Thm {
             throw new HolException("newBasicTypeDef: type " + n + " is already declared");
         if (abs.equals(rep) || Sig.consts().containsKey(abs) || Sig.consts().containsKey(rep))
             throw new HolException(
-                "newBasicTypeDef: constant names " + abs + " and " + rep + " are not fresh and distinct");
+                    "newBasicTypeDef: constant names " + abs + " and " + rep + " are not fresh and distinct");
         List<Type> vs = List.copyOf(Term.tyvars(p));
         Sig.newType(n, vs.size());
         Type aty = new Type.App(n, vs);
@@ -193,7 +193,7 @@ public final class Thm {
         Term.Var r = new Term.Var("r", rty);
         Thm t1 = new Thm(List.of(), Term.mkEq(new Term.Comb(c1, new Term.Comb(c2, a)), a));
         Thm t2 = new Thm(List.of(), Term.mkEq(new Term.Comb(p, r),
-            Term.mkEq(new Term.Comb(c2, new Term.Comb(c1, r)), r)));
+                Term.mkEq(new Term.Comb(c2, new Term.Comb(c1, r)), r)));
         return new TypeDef(t1, t2);
     }
 }
