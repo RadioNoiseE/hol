@@ -84,5 +84,56 @@ final class Kernel extends Test {
 
         same(type("'a -> 'a -> bool"), Sig.constType("="));
         fail(() -> Sig.constType("undeclared"));
+
+        hold(Thm.refl(term("x")), "x = x");
+        hold(Thm.refl(term("\\x. x")), "(\\x. x) = \\x. x");
+
+        hold(Thm.trans(Thm.assume(prop("x = y")), Thm.assume(prop("y = z"))), "x = z", "x = y", "y = z");
+        hold(Thm.trans(Thm.assume(prop("(f:'a->'a) = \\x. x")), Thm.assume(prop("(\\y. y) = (f:'a->'a)"))),
+                "(f:'a->'a) = f", "(f:'a->'a) = (\\x. x)", "(\\y. y) = (f:'a->'a)");
+        fail(() -> Thm.trans(Thm.assume(prop("x = y")), Thm.assume(prop("x = z"))));
+
+        hold(Thm.mkComb(Thm.refl(term("(f:'a->'a)")), Thm.assume(prop("x = y"))), "(f:'a->'a) x = f y", "x = y");
+        hold(Thm.mkComb(Thm.assume(prop("(f:'a->'a) = f'")), Thm.assume(prop("x = y"))), "(f:'a->'a) x = f' (y:'a)",
+                "(f:'a->'a) = f'", "x = y");
+        same(1, Thm.mkComb(Thm.assume(prop("(\\x. x) = (f:'a->'a)")),
+                Thm.mkComb(Thm.assume(prop("(\\z. z) = (f:'a->'a)")), Thm.refl(term("x")))).hyps().size());
+        fail(() -> Thm.mkComb(Thm.refl(term("(f:'a->'a)")), Thm.refl(prop("p"))));
+
+        hold(Thm.abs(X, Thm.refl(term("(f:'a->'a) x"))), "(\\x. (f:'a->'a) x) = \\x. f x");
+        hold(Thm.abs(Y, Thm.assume(prop("x = z"))), "(\\(y:'a). (x:'a)) = \\(y:'a). z", "x = z");
+        fail(() -> Thm.abs(X, Thm.assume(prop("x = y"))));
+        fail(() -> Thm.abs(X, Thm.assume(prop("p"))));
+
+        hold(Thm.beta(term("(\\x. (f:'a->'a) x) x")), "(\\x. (f:'a->'a) x) x = f x");
+        fail(() -> Thm.beta(term("(\\x. x) y")));
+        fail(() -> Thm.beta(term("(f:'a->'a) x")));
+        fail(() -> Thm.beta(term("x")));
+
+        hold(Thm.assume(prop("t")), "t", "t");
+        hold(Thm.assume(prop("x = y")), "x = y", "x = y");
+        fail(() -> Thm.assume(term("x")));
+
+        hold(Thm.eqMp(Thm.assume(prop("(p:bool) = q")), Thm.assume(prop("p"))), "q", "(p:bool) = q", "p");
+        hold(Thm.eqMp(Thm.assume(prop("((\\x. x) = (f:'a->'a)) = p")), Thm.assume(prop("(\\y. y) = (f:'a->'a)"))),
+                "p", "((\\x. x) = (f:'a->'a)) = p", "(\\y. y) = (f:'a->'a)");
+        fail(() -> Thm.eqMp(Thm.assume(prop("p")), Thm.assume(prop("p"))));
+        fail(() -> Thm.eqMp(Thm.assume(prop("(p:bool) = q")), Thm.assume(prop("q"))));
+
+        hold(Thm.dar(Thm.assume(prop("p")), Thm.assume(prop("p"))), "(p:bool) = p");
+        hold(Thm.dar(Thm.assume(prop("p")), Thm.assume(prop("q"))), "(p:bool) = q", "p", "q");
+        same(0, Thm.dar(Thm.assume(prop("(\\x. x) = (f:'a->'a)")), Thm.assume(prop("(\\y. y) = (f:'a->'a)"))).hyps()
+                .size());
+        hold(Thm.dar(Thm.assume(prop("p")), Thm.eqMp(Thm.assume(prop("(p:bool) = q")), Thm.assume(prop("p")))),
+                "(p:bool) = q", "p", "(p:bool) = q");
+
+        hold(Thm.inst(Map.of(X, term("y")), Thm.assume(prop("x = z"))), "y = z", "y = z");
+        same(1, Thm.inst(Map.of((Term.Var) term("z"), term("x")),
+                Thm.dar(Thm.assume(prop("x = y")), Thm.assume(prop("z = y")))).hyps().size());
+        fail(() -> Thm.inst(Map.of(X, prop("p")), Thm.refl(term("x"))));
+
+        hold(Thm.instType(Map.of(A, BOOL), Thm.assume(prop("x = y"))), "(x:bool) = y", "(x:bool) = y");
+        same(1, Thm.instType(Map.of(B, A),
+                Thm.dar(Thm.assume(prop("(x:'a) = x")), Thm.assume(prop("(x:'b) = x")))).hyps().size());
     }
 }
