@@ -48,7 +48,8 @@ class Test {
 
     static void hold(Thm t, String c, String... hs) {
         if (!Term.aconv(t.concl(), prop(c)) || t.hyps().size() != hs.length)
-            throw new AssertionError("expected " + String.join(", ", hs) + " |- " + c + ", got " + Printer.show(t));
+            throw new AssertionError("expected " + (hs.length == 0 ? "" : String.join(", ", hs) + " ") + "|- " + c
+                    + ", got " + Printer.show(t));
         for (String h : hs)
             if (t.hyps().stream().noneMatch(u -> Term.aconv(u, prop(h))))
                 throw new AssertionError("missing hypothesis " + h + " in " + Printer.show(t));
