@@ -34,7 +34,7 @@ class Test {
 
     static void same(Object o1, Object o2) {
         if (!o1.equals(o2))
-            throw new AssertionError("expected: " + o1 + ", got " + o2);
+            throw new AssertionError("expected " + o1 + ", got " + o2);
     }
 
     static void fail(Runnable a) {
