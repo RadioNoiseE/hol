@@ -87,7 +87,7 @@ public final class Thm {
         return new Thm(union(t1.hyps, t2.hyps), Term.mkEq(e1.l(), e2.r()));
     }
 
-    // MK_COMB: A |- f = g, B |- x = y => A \/ B |- f x = g y
+    // MK_COMB: A |- f = g, B |- x = y => A + B |- f x = g y
     public static Thm mkComb(Thm t1, Thm t2) {
         Term.Eq e1 = Term.destEq(t1.concl);
         Term.Eq e2 = Term.destEq(t2.concl);
@@ -120,7 +120,7 @@ public final class Thm {
         return new Thm(List.of(t), t);
     }
 
-    // EQ_MP: A |- p = q, B |- p => A \/ B |- q
+    // EQ_MP: A |- p = q, B |- p => A + B |- q
     public static Thm eqMp(Thm t1, Thm t2) {
         Term.Eq e = Term.destEq(t1.concl);
         if (!Term.aconv(e.l(), t2.concl))
