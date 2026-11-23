@@ -226,6 +226,34 @@ public final class Bool {
         return mp(disch(p, t), Thm.assume(p));
     }
 
+    // IMP_ANTISYM_RULE: A |- p ==> q, B |- q ==> p => A + B |- p = q
+    public static Thm impAntisymRule(Thm t1, Thm t2) {
+        Imp i1 = destImp(t1.concl());
+        Imp i2 = destImp(t2.concl());
+        if (Term.aconv(i1.l(), i2.r()) && Term.aconv(i1.r(), i2.l()))
+            return Thm.dar(undisch(t2), undisch(t1));
+        throw new HolException("impAntisymRule: theorems do not agree: " + t1 + " and " + t2);
+    }
+
+    // EQ_IMP_PTH1: |- (p = q) ==> p ==> q
+    // EQ_IMP_PTH2: |- (p = q) ==> q ==> p
+    private static final Thm EQ_IMP_PTH1 = disch(Term.mkEq(P, Q),
+            disch(P, Thm.eqMp(Thm.assume(Term.mkEq(P, Q)), Thm.assume(P))));
+    private static final Thm EQ_IMP_PTH2 = disch(Term.mkEq(P, Q),
+            disch(Q, Thm.eqMp(Equal.sym(Thm.assume(Term.mkEq(P, Q))), Thm.assume(Q))));
+
+    // EQ_IMP1: A |- p = q => A |- p ==> q
+    public static Thm eqImp1(Thm t) {
+        Term.Eq e = Term.destEq(t.concl());
+        return mp(Thm.inst(Map.of(P, e.l(), Q, e.r()), EQ_IMP_PTH1), t);
+    }
+
+    // EQ_IMP2: A |- p = q => A |- q ==> p
+    public static Thm eqImp2(Thm t) {
+        Term.Eq e = Term.destEq(t.concl());
+        return mp(Thm.inst(Map.of(P, e.l(), Q, e.r()), EQ_IMP_PTH2), t);
+    }
+
     // FORALL_DEF: |- (!) = \s. s = \x. T
     public static final Thm FORALL_DEF = Thm
             .newBasicDef(Term.mkEq(new Term.Var("!", Type.fun(PRED, BOOL)), lam(S, Term.mkEq(S, lam(X, T)))));
