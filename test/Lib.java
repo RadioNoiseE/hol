@@ -32,6 +32,13 @@ final class Lib extends Test {
         hold(Bool.undischAll(Thm.assume(prop("p ==> q ==> r"))), "r", "p ==> q ==> r", "p", "q");
         hold(Bool.addAssum(prop("p"), Thm.refl(term("x"))), "x = x", "p");
         fail(() -> Bool.mp(Thm.assume(prop("p ==> q")), Thm.assume(prop("q"))));
+        hold(Bool.impAntisymRule(Thm.assume(prop("p ==> q")), Thm.assume(prop("q ==> p"))), "(p:bool) = q", "p ==> q",
+                "q ==> p");
+        hold(Bool.eqImp1(Thm.assume(prop("(p:bool) = q"))), "p ==> q", "(p:bool) = q");
+        hold(Bool.eqImp2(Thm.assume(prop("(p:bool) = q"))), "q ==> p", "(p:bool) = q");
+        fail(() -> Bool.impAntisymRule(Thm.assume(prop("p ==> q")), Thm.assume(prop("q ==> r"))));
+        fail(() -> Bool.eqImp1(Thm.assume(prop("x = y"))));
+        fail(() -> Bool.eqImp2(Thm.assume(prop("x = y"))));
 
         hold(Bool.FORALL_DEF, "(!) = \\(s:'a->bool). s = \\x. T");
         hold(Bool.spec(term("y"), Thm.assume(prop("!x. x = c"))), "y = c", "!x. x = c");
