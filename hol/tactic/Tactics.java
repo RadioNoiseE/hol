@@ -29,16 +29,15 @@ public final class Tactics {
         return prove(Infer.term(Parser.parse("(" + s + " : bool)")), c);
     }
 
+    // NO_TAC: A ?- p => fails
     public static final Tactic NO_TAC = g -> {
         throw new HolException("NO_TAC");
     };
 
+    // ALL_TAC: A ?- p => A ?- p
     public static final Tactic ALL_TAC = g -> new Tactic.State(List.of(g), ts -> ts.get(0));
 
-    public static Tactic repeat(Tactic c) {
-        return g -> c.then(repeat(c)).orElse(ALL_TAC).apply(g);
-    }
-
+    // ACCEPT_TAC: A ?- p => solved, using B |- p
     public static Tactic acceptTac(Thm t) {
         return g -> {
             if (Term.aconv(t.concl(), g.c()))
@@ -47,6 +46,21 @@ public final class Tactics {
         };
     }
 
+    // ASSUME_TAC: A ?- p => A, q ?- p, using B |- q
+    public static Tactic assumeTac(Thm t) {
+        return g -> {
+            List<Thm> as = new ArrayList<>(g.as());
+            as.add(0, t);
+            return new Tactic.State(List.of(new Goal(as, g.c())), ts -> Bool.proveHyp(t, ts.get(0)));
+        };
+    }
+
+    // REPEAT: apply c until it fails
+    public static Tactic repeat(Tactic c) {
+        return g -> c.then(repeat(c)).orElse(ALL_TAC).apply(g);
+    }
+
+    // FIRST_ASSUM: f applied to the first assumption for which it succeeds
     public static Tactic firstAssum(Function<Thm, Tactic> f) {
         return g -> {
             for (Thm a : g.as())
@@ -59,23 +73,19 @@ public final class Tactics {
         };
     }
 
+    // CONJ_TAC: A ?- p /\ q => A ?- p, A ?- q
     public static final Tactic CONJ_TAC = g -> {
         Bool.Conj c = Bool.destConj(g.c());
         return new Tactic.State(List.of(new Goal(g.as(), c.l()), new Goal(g.as(), c.r())),
                 ts -> Bool.conj(ts.get(0), ts.get(1)));
     };
 
+    // CONJUNCTS_THEN: f applied to B |- p, then to B |- q, using B |- p /\ q
     public static Function<Thm, Tactic> conjunctsThen(Function<Thm, Tactic> f) {
         return t -> f.apply(Bool.conjunct1(t)).then(f.apply(Bool.conjunct2(t)));
     }
 
-    public static final Tactic DISCH_TAC = g -> {
-        Bool.Imp i = Bool.destImp(g.c());
-        List<Thm> as = new ArrayList<>(g.as());
-        as.add(0, Thm.assume(i.l()));
-        return new Tactic.State(List.of(new Goal(as, i.r())), ts -> Bool.disch(i.l(), ts.get(0)));
-    };
-
+    // DISCH_THEN: DISCH_TAC, with p |- p given to f
     public static Tactic dischThen(Function<Thm, Tactic> f) {
         return g -> {
             Bool.Imp i = Bool.destImp(g.c());
@@ -84,6 +94,27 @@ public final class Tactics {
         };
     }
 
+    // DISCH_TAC: A ?- p ==> q => A, p ?- q
+    public static final Tactic DISCH_TAC = dischThen(Tactics::assumeTac);
+
+    // MP_TAC: A ?- p => A ?- q ==> p, using B |- q
+    public static Tactic mpTac(Thm t) {
+        return g -> {
+            Term m = Bool.mkImp(t.concl(), g.c());
+            return new Tactic.State(List.of(new Goal(g.as(), m)), ts -> Bool.mp(ts.get(0), t));
+        };
+    }
+
+    // EQ_TAC: A ?- p = q => A ?- p ==> q, A ?- q ==> p
+    public static final Tactic EQ_TAC = g -> {
+        Term.Eq e = Term.destEq(g.c());
+        Term t1 = Bool.mkImp(e.l(), e.r());
+        Term t2 = Bool.mkImp(e.r(), e.l());
+        return new Tactic.State(List.of(new Goal(g.as(), t1), new Goal(g.as(), t2)),
+                ts -> Bool.impAntisymRule(ts.get(0), ts.get(1)));
+    };
+
+    // GEN_TAC: A ?- !x. p => A ?- p[v/x], v not free in A or !x. p
     public static final Tactic GEN_TAC = g -> {
         Bool.Forall f = Bool.destForall(g.c());
         Set<Term.Var> fs = new HashSet<>(Term.frees(g.c()));
@@ -97,6 +128,7 @@ public final class Tactics {
                 ts -> Bool.gen(v, ts.get(0)));
     };
 
+    // EXISTS_TAC: A ?- ?x. p => A ?- p[t/x]
     public static Tactic existsTac(Term t) {
         return g -> {
             Bool.Exists e = Bool.destExists(g.c());
@@ -105,51 +137,7 @@ public final class Tactics {
         };
     }
 
-    public static final Tactic DISJ1_TAC = g -> {
-        Bool.Disj d = Bool.destDisj(g.c());
-        return new Tactic.State(List.of(new Goal(g.as(), d.l())), ts -> Bool.disj1(ts.get(0), d.r()));
-    };
-
-    public static final Tactic DISJ2_TAC = g -> {
-        Bool.Disj d = Bool.destDisj(g.c());
-        return new Tactic.State(List.of(new Goal(g.as(), d.r())), ts -> Bool.disj2(d.l(), ts.get(0)));
-    };
-
-    public static final Tactic EQ_TAC = g -> {
-        Term.Eq e = Term.destEq(g.c());
-        Term t1 = Bool.mkImp(e.l(), e.r());
-        Term t2 = Bool.mkImp(e.r(), e.l());
-        return new Tactic.State(List.of(new Goal(g.as(), t1), new Goal(g.as(), t2)),
-                ts -> Bool.impAntisymRule(ts.get(0), ts.get(1)));
-    };
-
-    public static Tactic assumeTac(Thm t) {
-        return g -> {
-            List<Thm> as = new ArrayList<>(g.as());
-            as.add(0, t);
-            return new Tactic.State(List.of(new Goal(as, g.c())), ts -> Bool.proveHyp(t, ts.get(0)));
-        };
-    }
-
-    public static Tactic mpTac(Thm t) {
-        return g -> {
-            Term m = Bool.mkImp(t.concl(), g.c());
-            return new Tactic.State(List.of(new Goal(g.as(), m)), ts -> Bool.mp(ts.get(0), t));
-        };
-    }
-
-    public static Tactic disjCasesTac(Thm t) {
-        return g -> {
-            Bool.Disj d = Bool.destDisj(t.concl());
-            List<Thm> as1 = new ArrayList<>(g.as());
-            List<Thm> as2 = new ArrayList<>(g.as());
-            as1.add(0, Thm.assume(d.l()));
-            as2.add(0, Thm.assume(d.r()));
-            return new Tactic.State(List.of(new Goal(as1, g.c()), new Goal(as2, g.c())),
-                    ts -> Bool.disjCases(t, ts.get(0), ts.get(1)));
-        };
-    }
-
+    // CHOOSE_THEN: CHOOSE_TAC, with p[v/x] |- p[v/x] given to f
     public static Function<Thm, Tactic> chooseThen(Function<Thm, Tactic> f) {
         return t -> g -> {
             Bool.Exists e = Bool.destExists(t.concl());
@@ -168,10 +156,24 @@ public final class Tactics {
         };
     }
 
+    // CHOOSE_TAC: A ?- q => A, p[v/x] ?- q, using B |- ?x. p
     public static Tactic chooseTac(Thm t) {
         return chooseThen(Tactics::assumeTac).apply(t);
     }
 
+    // DISJ1_TAC: A ?- p \/ q => A ?- p
+    public static final Tactic DISJ1_TAC = g -> {
+        Bool.Disj d = Bool.destDisj(g.c());
+        return new Tactic.State(List.of(new Goal(g.as(), d.l())), ts -> Bool.disj1(ts.get(0), d.r()));
+    };
+
+    // DISJ2_TAC: A ?- p \/ q => A ?- q
+    public static final Tactic DISJ2_TAC = g -> {
+        Bool.Disj d = Bool.destDisj(g.c());
+        return new Tactic.State(List.of(new Goal(g.as(), d.r())), ts -> Bool.disj2(d.l(), ts.get(0)));
+    };
+
+    // DISJ_CASES_THEN: DISJ_CASES_TAC, with p |- p and q |- q given to f
     public static Function<Thm, Tactic> disjCasesThen(Function<Thm, Tactic> f) {
         return t -> g -> {
             Bool.Disj d = Bool.destDisj(t.concl());
@@ -183,6 +185,11 @@ public final class Tactics {
             return new Tactic.State(gs, ts -> Bool.disjCases(t, s1.j().apply(ts.subList(0, k)),
                     s2.j().apply(ts.subList(k, ts.size()))));
         };
+    }
+
+    // DISJ_CASES_TAC: A ?- r => A + {p} ?- r, A + {q} ?- r, using B |- p \/ q
+    public static Tactic disjCasesTac(Thm t) {
+        return disjCasesThen(Tactics::assumeTac).apply(t);
     }
 
     public static Tactic stripAssumeTac(Thm t) {
