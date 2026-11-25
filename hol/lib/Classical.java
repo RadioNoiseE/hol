@@ -8,6 +8,10 @@ public final class Classical {
         // cannot be instantiated
     }
 
+    public static void load() {
+        // makes this theory available
+    }
+
     private static final Type.Var A = Type.var("a");
     private static final Type.Var B = Type.var("b");
 
