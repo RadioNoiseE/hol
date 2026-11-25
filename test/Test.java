@@ -4,7 +4,7 @@ import hol.syntax.*;
 
 class Test {
     static {
-        Classical.EXCLUDED_MIDDLE.hashCode(); // load the theories
+        Classical.load(); // implicitly loading bool
 
         Sig.newType("list", 1);
         Sig.newType("prod", 2);
